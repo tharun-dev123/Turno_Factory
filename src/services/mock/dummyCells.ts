@@ -1,0 +1,96 @@
+import type { CellRecord, InspectionStatus, QcStatus } from '@/models/cell';
+
+/**
+ * TEMPORARY dummy data for UI development. Deleted in Phase 2.
+ *
+ * ~20 realistic cells: complete records, records with missing measurements, and a mix of QC /
+ * inspection statuses. The first 8 barcodes come from the factory's sample Excel; the rest follow the
+ * same visual style but are invented. None of this confirms the real QR payload format.
+ */
+
+const STATION_ID = 'A-12';
+const LINE_ID = '04';
+
+const GRADE_A1 = 'Grade A1 (Standard) - High Precision';
+const GRADE_A2 = 'Grade A2 (Standard)';
+const GRADE_B1 = 'Grade B1 (Reduced)';
+const GRADE_C = 'Grade C (Reject)';
+
+interface Seed {
+  barcode: string;
+  /** Hours before "now" this cell was scanned */
+  hoursAgo: number;
+  grade?: string | null;
+  local?: string | null;
+  weight?: number | null;
+  voltage?: number | null;
+  acir?: number | null;
+  capacity?: number | null;
+  dcir20?: number | null;
+  dcir50?: number | null;
+  dcir90?: number | null;
+  qc: QcStatus;
+  inspection: InspectionStatus;
+  /** true -> entered manually (no raw payload) */
+  manual?: boolean;
+}
+
+const SEEDS: Seed[] = [
+  // --- Oldest (2 days ago): complete records based on the sample Excel ---
+  { barcode: '02KCBE516100DHG702113060', hoursAgo: 52, grade: GRADE_A1, local: 'L4-CELL-088', weight: 3120.4, voltage: 3.652, acir: 0.42, capacity: 50.2, dcir20: 0.68, dcir50: 0.65, dcir90: 0.63, qc: 'passed', inspection: 'complete' },
+  { barcode: '02KCBE516100CHG702021596', hoursAgo: 51.5, grade: GRADE_A1, local: 'L4-CELL-089', weight: 3118.9, voltage: 3.274, acir: 0.39, capacity: 50.1, dcir20: 0.69, dcir50: 0.66, dcir90: 0.64, qc: 'passed', inspection: 'complete' },
+  { barcode: '02KCBE516100CHG702020802', hoursAgo: 51, grade: GRADE_A1, local: 'L4-CELL-090', weight: 3121.2, voltage: 3.274, acir: 0.38, capacity: 50.3, dcir20: 0.67, dcir50: 0.64, dcir90: 0.62, qc: 'passed', inspection: 'complete' },
+  { barcode: '02KCBE516100CHG702022741', hoursAgo: 50.5, grade: GRADE_A2, local: 'L4-CELL-268', weight: 3122.6, voltage: 3.273, acir: 0.39, capacity: 49.8, dcir20: 0.7, dcir50: 0.67, dcir90: 0.65, qc: 'passed', inspection: 'complete' },
+  { barcode: '02KCBE516100CHG702022758', hoursAgo: 50, grade: GRADE_A1, local: 'L4-CELL-037', weight: 3119.7, voltage: 3.274, acir: 0.39, capacity: 50.0, dcir20: 0.68, dcir50: 0.65, dcir90: 0.63, qc: 'passed', inspection: 'complete' },
+  { barcode: '02KCBE516100CHG702022765', hoursAgo: 49.5, grade: GRADE_B1, local: 'L4-CELL-038', weight: 3115.3, voltage: 3.274, acir: 0.4, capacity: 48.9, dcir20: 0.74, dcir50: 0.71, dcir90: 0.69, qc: 'passed', inspection: 'complete' },
+  { barcode: '02KCBE516100CHG702128993', hoursAgo: 49, grade: GRADE_A1, local: 'L4-CELL-039', weight: 3123.1, voltage: 3.274, acir: 0.33, capacity: 50.4, dcir20: 0.66, dcir50: 0.63, dcir90: 0.61, qc: 'passed', inspection: 'complete' },
+  { barcode: '02KCBE516100CHG702020800', hoursAgo: 48.5, grade: GRADE_A2, local: 'L4-CELL-290', weight: 3120.0, voltage: 3.274, acir: 0.39, capacity: 49.9, dcir20: 0.69, dcir50: 0.66, dcir90: 0.64, qc: 'passed', inspection: 'complete' },
+
+  // --- Yesterday: mix of complete and partially measured ---
+  { barcode: '02KCBE516100CHG702023891', hoursAgo: 30, grade: GRADE_A1, local: 'L4-CELL-091', weight: 3121.8, voltage: 3.271, acir: 0.41, capacity: 50.2, dcir20: 0.68, dcir50: 0.65, dcir90: 0.63, qc: 'passed', inspection: 'complete' },
+  { barcode: '02KCBE516100CHG702023904', hoursAgo: 29, grade: GRADE_C, local: 'L4-CELL-092', weight: 3101.4, voltage: 3.198, acir: 0.78, capacity: 46.1, dcir20: 1.05, dcir50: 0.99, dcir90: 0.95, qc: 'failed', inspection: 'complete' },
+  { barcode: '02KCBE516100DHG702113077', hoursAgo: 28, grade: GRADE_A1, local: 'L4-CELL-093', weight: 3120.9, voltage: 3.275, acir: 0.4, capacity: 50.1, dcir20: null, dcir50: null, dcir90: null, qc: 'pending', inspection: 'in_progress' },
+  { barcode: '02KCBE516100DHG702113084', hoursAgo: 27, grade: null, local: null, weight: 3119.2, voltage: 3.269, acir: 0.4, capacity: null, dcir20: null, dcir50: null, dcir90: null, qc: 'pending', inspection: 'in_progress' },
+  { barcode: '02KCBE516100CHG702023918', hoursAgo: 26, grade: GRADE_B1, local: 'L4-CELL-094', weight: 3114.8, voltage: 3.266, acir: 0.46, capacity: 49.0, dcir20: 0.75, dcir50: 0.72, dcir90: 0.7, qc: 'passed', inspection: 'complete' },
+  { barcode: '02KCBE516100CHG702023925', hoursAgo: 25, grade: null, local: 'L4-CELL-095', weight: null, voltage: null, acir: null, capacity: null, dcir20: null, dcir50: null, dcir90: null, qc: 'pending', inspection: 'not_started' },
+
+  // --- Today: freshly scanned, mostly barcode only ---
+  { barcode: '02KCBE516100CHG702023932', hoursAgo: 5, qc: 'pending', inspection: 'not_started' },
+  { barcode: '02KCBE516100CHG702023949', hoursAgo: 4, qc: 'pending', inspection: 'not_started' },
+  { barcode: '02KCBE516100DHG702113091', hoursAgo: 3, grade: GRADE_A2, local: 'L4-CELL-096', weight: 3120.6, voltage: 3.272, acir: 0.4, capacity: 50.0, dcir20: 0.69, dcir50: 0.66, dcir90: 0.64, qc: 'passed', inspection: 'complete' },
+  { barcode: '02KCBE516100CHG702023956', hoursAgo: 2, qc: 'pending', inspection: 'not_started', manual: true },
+  { barcode: '02KCBE516100CHG702023963', hoursAgo: 1, qc: 'pending', inspection: 'not_started' },
+  { barcode: '02KCBE516100CHG702023970', hoursAgo: 0.25, qc: 'pending', inspection: 'not_started' },
+];
+
+/** Build the dummy records relative to `now` so "added today" statistics stay realistic. */
+export function buildDummyCells(now: Date = new Date()): CellRecord[] {
+  return SEEDS.map((seed, index): CellRecord => {
+    const scannedAt = new Date(now.getTime() - seed.hoursAgo * 3_600_000).toISOString();
+    const serialNumber = index + 1;
+    return {
+      id: `dummy-${String(serialNumber).padStart(3, '0')}`,
+      serialNumber,
+      batteryBarcode: seed.barcode,
+      rawPayload: seed.manual ? null : seed.barcode,
+      validationMode: 'development',
+      sortingGrade: seed.grade ?? null,
+      cellLocalNumber: seed.local ?? null,
+      cellWeightG: seed.weight ?? null,
+      cellVoltageV: seed.voltage ?? null,
+      acirMohm: seed.acir ?? null,
+      dischargeCapacity05CAh: seed.capacity ?? null,
+      dcir20Mohm: seed.dcir20 ?? null,
+      dcir50Mohm: seed.dcir50 ?? null,
+      dcir90Mohm: seed.dcir90 ?? null,
+      stationId: STATION_ID,
+      lineId: LINE_ID,
+      scannedAt,
+      createdAt: scannedAt,
+      updatedAt: scannedAt,
+      syncStatus: 'synced',
+      qcStatus: seed.qc,
+      inspectionStatus: seed.inspection,
+    };
+  });
+}
