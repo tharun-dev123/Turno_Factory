@@ -15,9 +15,13 @@ export interface CellRepository {
    * the serial number and timestamps.
    */
   create(input: CreateCellInput): Promise<CellRecord>;
-  /** Update a cell. Must reject a barcode that belongs to another cell (DuplicateBarcodeError). */
+  /**
+   * Update a cell. Must reject a barcode that belongs to another cell (DuplicateBarcodeError) and a stale
+   * `expectedVersion` (ConflictError).
+   */
   update(id: string, input: UpdateCellInput): Promise<CellRecord>;
-  remove(id: string): Promise<void>;
+  /** Delete a cell. `requestId` makes a retried delete idempotent. */
+  remove(id: string, requestId?: string): Promise<void>;
 }
 
 export interface AuthTokenResult {

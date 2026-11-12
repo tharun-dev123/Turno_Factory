@@ -24,7 +24,7 @@ describe('Splash screen', () => {
 
   it('opens All Cells when a valid session exists', async () => {
     jest.useRealTimers();
-    await login('operator.line4', 'Turno@Dev2026');
+    await login('Admin', 'admin@123');
     jest.useFakeTimers();
     await renderScreen(<SplashRoute />);
     await act(async () => {

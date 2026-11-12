@@ -5,6 +5,9 @@ export type ServiceErrorCode =
   | 'VALIDATION'
   | 'NOT_FOUND'
   | 'AUTH'
+  | 'CONFLICT'
+  | 'BUSY'
+  | 'INTERNAL'
   | 'NETWORK'
   | 'UNKNOWN';
 
@@ -46,15 +49,56 @@ export class NotFoundError extends ServiceError {
 }
 
 export class AuthError extends ServiceError {
-  constructor(message = 'Invalid username or password.') {
+  /** Backend reason, e.g. INVALID_CREDENTIALS, LOCKED_OUT, TOKEN_EXPIRED, TOKEN_INVALID */
+  readonly reason: string | null;
+
+  constructor(message = 'Invalid username or password.', reason: string | null = null) {
     super('AUTH', message);
+    this.reason = reason;
   }
 }
 
+/** The cell was changed by someone else after it was loaded (optimistic locking). */
+export class ConflictError extends ServiceError {
+  constructor(message = 'This cell was changed by someone else. Go back, reopen it and try again.') {
+    super('CONFLICT', message);
+  }
+}
+
+/** The shared backend is handling another request. Safe to retry. */
+export class BusyError extends ServiceError {
+  constructor(message = 'The server is busy. Please try again in a moment.') {
+    super('BUSY', message);
+  }
+}
+
+/** The backend failed. When `recovery` is ROLLED_BACK nothing was saved. */
+export class InternalError extends ServiceError {
+  readonly recovery: string | null;
+
+  constructor(message = 'The server could not complete the request. Please try again.', recovery: string | null = null) {
+    super('INTERNAL', message);
+    this.recovery = recovery;
+  }
+}
+
+/** The request could not be completed or its outcome is unknown (offline, timeout, bad response). */
 export class NetworkError extends ServiceError {
   constructor(message = 'Cannot reach the server. Check your connection and try again.') {
     super('NETWORK', message);
   }
+}
+
+/** No response arrived in time: the server may or may not have processed the request. */
+export class TimeoutError extends NetworkError {
+  constructor(message = 'The server took too long to respond. The request was not confirmed. Please try again.') {
+    super(message);
+  }
+}
+
+/** Errors that mean "outcome unknown or temporary": a retry with the same requestId is safe. */
+export function isTransientError(error: unknown): boolean {
+  return error instanceof NetworkError || error instanceof BusyError || error instanceof InternalError;
 }
 
 /** Convert any thrown value into an operator-facing message. */

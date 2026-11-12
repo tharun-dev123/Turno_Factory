@@ -10,8 +10,9 @@ import type {
 import { normalizeText, validateEditableFields } from '@/utils/validators';
 import { checkScanPayload, type BarcodeCheckResult, type BarcodeRejectReason } from '@/validation/barcodeValidation';
 
-import { DuplicateBarcodeError, NotFoundError, ValidationError } from './errors';
+import { DuplicateBarcodeError, isTransientError, NotFoundError, ValidationError } from './errors';
 import { cellRepository } from './repository';
+import { newRequestId } from './requestId';
 
 /**
  * Cell service: the ONLY way screens and components read or change battery cell records.
@@ -28,6 +29,8 @@ export interface NewCellRequest extends Partial<EditableCellFields> {
 export interface UpdateCellRequest extends Partial<EditableCellFields> {
   /** Provide to change the barcode (Rescan / manual entry). Validated and checked for duplicates. */
   newBarcode?: { rawPayload: string; source: ScanSource };
+  /** The `version` of the cell as loaded. A stale version is rejected with a ConflictError. */
+  expectedVersion?: number;
 }
 
 export type ScanOutcome =
@@ -36,6 +39,37 @@ export type ScanOutcome =
   | { status: 'invalid'; reason: BarcodeRejectReason; message: string; rawPayload: string };
 
 const sortNewestFirst = (a: CellRecord, b: CellRecord) => b.serialNumber - a.serialNumber;
+
+// ---------------------------------------------------------------------------------------------
+// Pending write requests.
+// When a write ends in an unknown/temporary state (timeout, offline, busy server) the operator will try
+// the same thing again. Re-using the SAME requestId lets the backend recognise the retry, so the first
+// attempt is never applied twice and a retried scan never shows up as its own "duplicate".
+// ---------------------------------------------------------------------------------------------
+
+const PENDING_TTL_MS = 10 * 60 * 1000;
+const pendingRequests = new Map<string, { requestId: string; at: number }>();
+
+function acquireRequestId(key: string): { requestId: string; resumed: boolean } {
+  const now = Date.now();
+  for (const [k, v] of pendingRequests) if (now - v.at > PENDING_TTL_MS) pendingRequests.delete(k);
+  const existing = pendingRequests.get(key);
+  if (existing) return { requestId: existing.requestId, resumed: true };
+  const requestId = newRequestId();
+  pendingRequests.set(key, { requestId, at: now });
+  return { requestId, resumed: false };
+}
+
+/** Keep the pending id only while the outcome is unknown or temporary; any definite answer settles it. */
+function settleRequest(key: string, error?: unknown): void {
+  if (error !== undefined && isTransientError(error)) return;
+  pendingRequests.delete(key);
+}
+
+/** Test hook: forget pending requests. */
+export function clearPendingRequests(): void {
+  pendingRequests.clear();
+}
 
 /** Validate a raw payload with the active (development or production) validator. */
 export function validateBarcode(rawPayload: string): BarcodeCheckResult {
@@ -146,7 +180,17 @@ export async function createCell(request: NewCellRequest): Promise<CellRecord> {
     stationId: appConfig.station.id,
     lineId: appConfig.line.id,
   };
-  return cellRepository.create(input);
+
+  const key = `create:${request.source}:${request.rawPayload}`;
+  const { requestId } = acquireRequestId(key);
+  try {
+    const cell = await cellRepository.create({ ...input, requestId });
+    settleRequest(key);
+    return cell;
+  } catch (error) {
+    settleRequest(key, error);
+    throw error;
+  }
 }
 
 /**
@@ -171,7 +215,7 @@ export async function registerScan(rawPayload: string, source: ScanSource): Prom
 }
 
 export async function updateCell(id: string, request: UpdateCellRequest): Promise<CellRecord> {
-  const { newBarcode, ...fields } = request;
+  const { newBarcode, expectedVersion, ...fields } = request;
   const normalized = normalizeFields(fields);
 
   const fieldErrors = validateEditableFields(normalized);
@@ -180,6 +224,7 @@ export async function updateCell(id: string, request: UpdateCellRequest): Promis
   }
 
   const input: UpdateCellInput = { ...normalized };
+  if (expectedVersion !== undefined) input.expectedVersion = expectedVersion;
   if (newBarcode) {
     const check = checkScanPayload(newBarcode.rawPayload);
     if (!check.ok) throw new ValidationError(check.message, { batteryBarcode: check.message });
@@ -187,11 +232,36 @@ export async function updateCell(id: string, request: UpdateCellRequest): Promis
     input.rawPayload = newBarcode.source === 'scan' ? check.rawPayload : null;
     input.validationMode = check.mode;
   }
-  return cellRepository.update(id, input);
+
+  // Identical re-submissions of the same edit share one requestId (see "Pending write requests").
+  const key = `update:${id}:${JSON.stringify(input)}`;
+  const { requestId } = acquireRequestId(key);
+  try {
+    const cell = await cellRepository.update(id, { ...input, requestId });
+    settleRequest(key);
+    return cell;
+  } catch (error) {
+    settleRequest(key, error);
+    throw error;
+  }
 }
 
 export async function deleteCell(id: string): Promise<void> {
-  await cellRepository.remove(id);
+  const key = `delete:${id}`;
+  const { requestId, resumed } = acquireRequestId(key);
+  try {
+    await cellRepository.remove(id, requestId);
+    settleRequest(key);
+  } catch (error) {
+    // A repeated delete that finds nothing, after an earlier attempt whose outcome was unknown, means the
+    // earlier attempt did go through: that is a success, not an error.
+    if (resumed && error instanceof NotFoundError) {
+      settleRequest(key);
+      return;
+    }
+    settleRequest(key, error);
+    throw error;
+  }
 }
 
 /** Trim text fields and convert empty strings to null; leave numbers untouched. */

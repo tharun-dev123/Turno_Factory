@@ -123,7 +123,13 @@ export default function SettingsScreen() {
           <InfoRow
             icon="verified-user"
             label="Barcode validation"
-            value={appConfig.validationMode === 'development' ? 'Development (any QR payload)' : 'Production (strict)'}
+            value={
+              appConfig.validationMode === 'development'
+                ? 'Development (any QR payload)'
+                : appConfig.validationMode === 'server'
+                  ? 'Server-controlled (pilot records are UNVERIFIED)'
+                  : 'Production (strict)'
+            }
           />
         </Card>
       </ScrollView>

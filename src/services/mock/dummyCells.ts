@@ -91,6 +91,7 @@ export function buildDummyCells(now: Date = new Date()): CellRecord[] {
       syncStatus: 'synced',
       qcStatus: seed.qc,
       inspectionStatus: seed.inspection,
+      version: 1,
     };
   });
 }

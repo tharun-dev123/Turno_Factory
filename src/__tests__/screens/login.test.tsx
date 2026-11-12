@@ -27,7 +27,7 @@ describe('Login screen', () => {
 
   it('shows an error for wrong credentials and does not navigate', async () => {
     await renderScreen(<LoginScreen />);
-    await fireEvent.changeText(await screen.findByLabelText('Username'), 'operator.line4');
+    await fireEvent.changeText(await screen.findByLabelText('Username'), 'Admin');
     await fireEvent.changeText(screen.getByLabelText('Password'), 'wrong-password');
     await fireEvent.press(screen.getByLabelText('Sign In to Terminal'));
     expect(await screen.findByText('Invalid username or password.')).toBeTruthy();
@@ -36,8 +36,8 @@ describe('Login screen', () => {
 
   it('signs in with valid credentials and opens All Cells', async () => {
     await renderScreen(<LoginScreen />);
-    await fireEvent.changeText(await screen.findByLabelText('Username'), 'operator.line4');
-    await fireEvent.changeText(screen.getByLabelText('Password'), 'Turno@Dev2026');
+    await fireEvent.changeText(await screen.findByLabelText('Username'), 'Admin');
+    await fireEvent.changeText(screen.getByLabelText('Password'), 'admin@123');
     await fireEvent.press(screen.getByLabelText('Sign In to Terminal'));
     await waitFor(() => expect(testGlobals.__router.replace).toHaveBeenCalledWith('/(tabs)/cells'));
   });

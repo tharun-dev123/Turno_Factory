@@ -3,6 +3,8 @@ import type { ValidationMode } from '@/models/cell';
 
 import { developmentBarcodeValidator } from './developmentBarcodeValidator';
 import { productionBarcodeValidator } from './productionBarcodeValidator';
+import type { PayloadRejectReason } from './payloadChecks';
+import { serverBarcodeValidator } from './serverBarcodeValidator';
 
 /**
  * Barcode parsing + validation.
@@ -11,7 +13,7 @@ import { productionBarcodeValidator } from './productionBarcodeValidator';
  * The real QR payload structure is still unconfirmed, so nothing here assumes a fixed length or format.
  */
 
-export type BarcodeRejectReason = 'empty' | 'production_rules_pending';
+export type BarcodeRejectReason = PayloadRejectReason | 'production_rules_pending';
 
 export type BarcodeCheckResult =
   | {
@@ -38,14 +40,19 @@ export interface BarcodeValidator {
 
 /** Resolve the validator for the current configuration. */
 export function getBarcodeValidator(): BarcodeValidator {
-  if (appConfig.validationMode === 'development') {
-    // Development validation is only allowed while running on mock data.
-    if (appConfig.dataMode !== 'mock') {
-      throw new Error('Development barcode validation is only allowed in mock mode.');
-    }
-    return developmentBarcodeValidator;
+  switch (appConfig.validationMode) {
+    case 'development':
+      // Development validation is only allowed while running on mock data.
+      if (appConfig.dataMode !== 'mock') {
+        throw new Error('Development barcode validation is only allowed in mock mode.');
+      }
+      return developmentBarcodeValidator;
+    case 'server':
+      // Live mode: the backend decides (pilot / production); the client only does early sanity checks.
+      return serverBarcodeValidator;
+    case 'production':
+      return productionBarcodeValidator;
   }
-  return productionBarcodeValidator;
 }
 
 /** Convenience wrapper used by the service layer. */

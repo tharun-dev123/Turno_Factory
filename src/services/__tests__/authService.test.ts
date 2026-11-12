@@ -1,7 +1,7 @@
 import { AuthError, ValidationError } from '../errors';
 import { getSession, isAuthenticated, login, logout } from '../authService';
 
-const VALID = { username: 'operator.line4', password: 'Turno@Dev2026' };
+const VALID = { username: 'Admin', password: 'admin@123' };
 
 describe('authService', () => {
   beforeEach(async () => {

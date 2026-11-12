@@ -36,6 +36,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
+  // The backend rejected our token (expired / invalidated): go back to the signed-out state.
+  useEffect(
+    () =>
+      authService.onSessionExpired(() => {
+        setSession(null);
+        setStatus('unauthenticated');
+      }),
+    [],
+  );
+
   const signIn = useCallback(async (username: string, password: string) => {
     const next = await authService.login(username, password);
     setSession(next);

@@ -69,6 +69,8 @@ export function useCellForm(cell: CellRecord) {
     const request: UpdateCellRequest = {
       sortingGrade: values.sortingGrade,
       cellLocalNumber: values.cellLocalNumber,
+      // Reject the save (instead of overwriting) if someone else changed this cell after it was loaded.
+      expectedVersion: cell.version,
     };
     for (const key of NUMERIC_FIELDS) {
       const parsed = parseNumberInput(values[key as keyof CellFormValues] as string);
@@ -100,7 +102,7 @@ export function useCellForm(cell: CellRecord) {
     } finally {
       setSaving(false);
     }
-  }, [cell.id, pendingBarcode, values]);
+  }, [cell.id, cell.version, pendingBarcode, values]);
 
   return { values, setField, pendingBarcode, setPendingBarcode, errors, formError, dirty, saving, save };
 }

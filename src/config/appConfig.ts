@@ -1,17 +1,25 @@
 import Constants from 'expo-constants';
 
-import type { ValidationMode } from '@/models/cell';
+import { resolveApiBaseUrl, resolveDataMode, type DataMode } from './runtimeConfig';
 
 /**
  * Centralized application configuration.
  * Screens and components must read station/line/version/labels from here and never hardcode them.
+ *
+ * Data source (read at build time):
+ *   EXPO_PUBLIC_DATA_MODE = "mock" | "live"   (release builds must set it explicitly)
+ *   EXPO_PUBLIC_API_URL   = Apps Script web app URL (required when live)
+ * Both are public, non-secret values.
  */
 
-/** `mock` = local dummy data (Phase 1). `live` = Google Apps Script backend (Phase 2). */
-export type DataMode = 'mock' | 'live';
+export type { DataMode };
 
-const dataMode: DataMode = 'mock';
-const validationMode: ValidationMode = dataMode === 'mock' ? 'development' : 'production';
+/** Which barcode validator the app uses: development (mock only), server (live, server decides), production (strict, client-side). */
+export type ClientValidationMode = 'development' | 'server' | 'production';
+
+const dataMode: DataMode = resolveDataMode(process.env.EXPO_PUBLIC_DATA_MODE, __DEV__);
+const apiBaseUrl = resolveApiBaseUrl(process.env.EXPO_PUBLIC_API_URL, dataMode);
+const validationMode: ClientValidationMode = dataMode === 'mock' ? 'development' : 'server';
 
 export const appConfig = {
   appName: 'Turno Battery Scanner',
@@ -22,14 +30,28 @@ export const appConfig = {
 
   dataMode,
   /** Which barcode validator is active. Development validation is only allowed in mock mode. */
-  validationMode,
-  environmentLabel: dataMode === 'mock' ? 'DEV' : 'PROD',
+  validationMode: validationMode as ClientValidationMode,
+  environmentLabel: dataMode === 'mock' ? 'DEV' : 'LIVE',
 
-  /** Storage wording shown in status pills. Replaced when the backend is connected. */
+  /** Storage wording shown in status pills. */
   storage: {
     name: dataMode === 'mock' ? 'Local Mock Data' : 'Google Sheets',
-    statusOnline: dataMode === 'mock' ? 'Ready' : 'Connected',
+    statusOnline: 'Ready',
     savedBadge: dataMode === 'mock' ? 'MOCK' : 'LIVE',
+  },
+
+  /** Backend API (live mode). The URL is public; secrets never live in the app. */
+  api: {
+    baseUrl: apiBaseUrl,
+    readTimeoutMs: 20_000,
+    writeTimeoutMs: 30_000,
+    loginTimeoutMs: 20_000,
+    /** Extra attempts after the first for transient failures */
+    maxRetries: 2,
+    retryBackoffMs: [800, 2000] as readonly number[],
+    /** Stop retrying once this much total time has been spent */
+    readBudgetMs: 45_000,
+    writeBudgetMs: 95_000,
   },
 
   station: {
@@ -57,8 +79,7 @@ export const appConfig = {
     /** Alignment hint under the frame. Text is config-driven until the real format is confirmed. */
     alignHint: 'ALIGN QR CODE',
     /** Hint chip text; reflects the active validation mode honestly */
-    formatHint:
-      dataMode === 'mock' ? 'Dev mode: any QR payload accepted' : 'Production validation active',
+    formatHint: dataMode === 'mock' ? 'Dev mode: any QR payload accepted' : 'Server validation active',
   },
 
   list: {

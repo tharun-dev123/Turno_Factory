@@ -1,7 +1,7 @@
 import type { CellRecord, CreateCellInput, UpdateCellInput } from '@/models/cell';
 
 import type { CellRepository } from '../contracts';
-import { DuplicateBarcodeError, NotFoundError } from '../errors';
+import { ConflictError, DuplicateBarcodeError, NotFoundError } from '../errors';
 import { buildDummyCells } from './dummyCells';
 import { mockDelay, mockSeedMode } from './mockConfig';
 import { readCells, readSerialCounter, writeCells, writeSerialCounter } from './mockStorage';
@@ -21,7 +21,8 @@ let lock: Promise<unknown> = Promise.resolve();
 async function load(): Promise<void> {
   const stored = await readCells<CellRecord>();
   if (stored) {
-    cache = stored;
+    // Records saved before versioning existed get version 1.
+    cache = stored.map((cell) => ({ ...cell, version: cell.version ?? 1 }));
     const storedCounter = await readSerialCounter();
     const maxSerial = stored.reduce((max, cell) => Math.max(max, cell.serialNumber), 0);
     serialCounter = Math.max(storedCounter ?? 0, maxSerial);
@@ -116,6 +117,7 @@ export const mockCellRepository: CellRepository = {
         // Display-only statuses: new cells start unassessed.
         qcStatus: 'pending',
         inspectionStatus: 'not_started',
+        version: 1,
       };
       cells.push(record);
       await persist();
@@ -136,14 +138,19 @@ export const mockCellRepository: CellRepository = {
       }
 
       const current = cells[index];
+      if (input.expectedVersion !== undefined && input.expectedVersion !== current.version) {
+        throw new ConflictError();
+      }
+      const { expectedVersion: _expected, requestId: _requestId, ...changes } = input;
       const updated: CellRecord = {
         ...current,
-        ...stripUndefined(input),
+        ...stripUndefined(changes),
         // Immutable fields can never be changed through an update.
         id: current.id,
         serialNumber: current.serialNumber,
         createdAt: current.createdAt,
         updatedAt: new Date().toISOString(),
+        version: current.version + 1,
       };
       cells[index] = updated;
       await persist();
@@ -151,7 +158,7 @@ export const mockCellRepository: CellRepository = {
     });
   },
 
-  remove(id: string) {
+  remove(id: string, _requestId?: string) {
     return withLock(async () => {
       await mockDelay();
       const cells = await ensureLoaded();

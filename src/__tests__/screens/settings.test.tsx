@@ -7,7 +7,7 @@ import { renderScreen, testGlobals } from '@/testUtils/renderScreen';
 describe('Settings screen', () => {
   beforeEach(async () => {
     jest.clearAllMocks();
-    await login('operator.line4', 'Turno@Dev2026');
+    await login('Admin', 'admin@123');
   });
 
   it('shows the version, environment and validation mode', async () => {
@@ -15,7 +15,7 @@ describe('Settings screen', () => {
     expect(await screen.findByText('Settings & Preferences')).toBeTruthy();
     expect(screen.getByText('Application Version')).toBeTruthy();
     expect(screen.getByText('Development (any QR payload)')).toBeTruthy();
-    expect(await screen.findByText('operator.line4')).toBeTruthy();
+    expect(await screen.findByText('Admin')).toBeTruthy();
   });
 
   it('keeps the session when logout is cancelled', async () => {

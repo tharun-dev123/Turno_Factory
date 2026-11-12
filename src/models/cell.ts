@@ -54,6 +54,8 @@ export interface CellRecord extends EditableCellFields {
   syncStatus: SyncStatus;
   qcStatus: QcStatus;
   inspectionStatus: InspectionStatus;
+  /** Optimistic-locking version; incremented by the data source on every update */
+  version: number;
 }
 
 export type EditableFieldKey = keyof EditableCellFields;
@@ -67,6 +69,8 @@ export interface CreateCellInput extends Partial<EditableCellFields> {
   lineId: string | null;
   /** ISO timestamp of the scan; defaults to now */
   scannedAt?: string;
+  /** Idempotency key: a retry with the same id must not create a second record */
+  requestId?: string;
 }
 
 /** Input for updating a cell. Only provided keys are changed. Serial number cannot be changed. */
@@ -74,6 +78,10 @@ export interface UpdateCellInput extends Partial<EditableCellFields> {
   batteryBarcode?: string;
   rawPayload?: string | null;
   validationMode?: ValidationMode;
+  /** The `version` the editor loaded. A mismatch is rejected as a conflict. */
+  expectedVersion?: number;
+  /** Idempotency key for safe retries */
+  requestId?: string;
 }
 
 export interface CellStats {

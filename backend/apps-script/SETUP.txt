@@ -1,0 +1,120 @@
+TURNO BATTERY SCANNER - APPS SCRIPT BACKEND SETUP
+=================================================
+
+Do this with the COMPANY-OWNED Google account that owns the spreadsheet.
+Never type or paste the shared password into chat, email, code or the repo.
+Only Script Properties (step 4) hold secrets.
+
+FILES (paste each into the Apps Script editor, in this folder: backend/apps-script/)
+  appsscript.json   -> replaces the project manifest
+  Config.gs, Utils.gs, Auth.gs, Store.gs, Cells.gs, Main.gs
+
+
+1. CREATE THE PROJECT
+   - Go to https://script.google.com -> New project. Name it "Turno Battery Scanner API".
+   - (A standalone project is recommended. A script bound to the spreadsheet also works.)
+
+2. PASTE THE CODE
+   - Project Settings (gear icon) -> tick "Show 'appsscript.json' manifest file in editor".
+   - Open appsscript.json in the editor and replace its content with backend/apps-script/appsscript.json.
+   - Create six script files named exactly Config, Utils, Auth, Store, Cells, Main
+     (the editor adds ".gs") and paste the matching file content into each. Delete the default Code.gs.
+   - Save (Ctrl/Cmd+S).
+
+3. PREPARE THE SPREADSHEET
+   - Spreadsheet "Turno_Factory_Demo" must contain the tab "BatteryCells" (empty, or already with the exact
+     11 headers in order: Serial Number | Battery Barcode | Sorting | Cell Weight | Cell Voltage | ACIR |
+     Cell Local Number | 0.5C DCh capacities | DCIR @20% | DCIR @50% | DCIR @90%).
+   - The script creates "CellMeta" and "AuditLog" itself. It NEVER overwrites a different existing layout:
+     if the headers differ, initializeBackend stops with a message naming the sheet and column.
+   - Do not share the spreadsheet publicly. Only the owning account (and admins) need access.
+
+4. SCRIPT PROPERTIES  (Project Settings -> Script Properties -> Add script property)
+   Set these exactly:
+
+   SPREADSHEET_ID    The ID from the spreadsheet URL: https://docs.google.com/spreadsheets/d/<THIS PART>/edit
+   VALIDATION_MODE   pilot
+                     (pilot = accept any non-empty, safe QR payload and mark records UNVERIFIED.
+                      Leave it unset, or set "production", to reject every scan: strict production rules
+                      are intentionally NOT defined until real decoded QR samples are verified.)
+   ADMIN_USERNAME    The shared factory username (3+ characters). TEMPORARY - deleted by step 6.
+   ADMIN_PASSWORD    A strong shared password (12+ characters, different from the username). TEMPORARY -
+                     deleted by step 6.
+
+   Optional:
+   SESSION_HOURS       default 12   (how long a phone stays signed in)
+   MAX_FAILED_LOGINS   default 5    (failed attempts before lockout)
+   LOCKOUT_MINUTES     default 15
+
+   Created automatically (do not set by hand): AUTH_USERNAME, AUTH_PASSWORD_RECORD, TOKEN_SECRET,
+   TOKEN_EPOCH, SERIAL_COUNTER, LOGIN_STATE, JOURNAL.
+
+5. INITIALIZE
+   - Select the function  initializeBackend  in the toolbar and click Run.
+   - Authorize when asked (scope: Google Sheets). This is your own account running your own script.
+   - Check the Execution log: "Backend initialized. Validation mode: pilot. Credentials configured: ..."
+   - Open the spreadsheet: tabs BatteryCells, CellMeta, AuditLog exist with frozen header rows.
+
+6. STORE THE CREDENTIALS (hashed)
+   - Run  setupCredentials.
+   - Afterwards confirm in Script Properties that ADMIN_USERNAME and ADMIN_PASSWORD are GONE and that
+     AUTH_USERNAME and AUTH_PASSWORD_RECORD exist (the record is a salted hash, not the password).
+   - Run  showStatus  and check: spreadsheetIdSet true, credentialsConfigured true, tokenSecretSet true.
+
+7. DEPLOY THE WEB APP
+   - Deploy -> New deployment -> type "Web app".
+       Description:    Turno API v1
+       Execute as:     Me (the company account)
+       Who has access: Anyone
+     (Why "Anyone": the phones are not signed in to Google. Access is protected by the app-level login,
+      expiring signed tokens and failed-login lockout. "Anyone within <company domain>" would require every
+      request to carry a company Google OAuth token, which the app does not implement in this phase.
+      The URL itself is not a secret.)
+   - Authorize if asked, then copy the "Web app" URL. It must look like
+       https://script.google.com/macros/s/<DEPLOYMENT_ID>/exec
+
+8. SMOKE TEST (from any terminal)
+   Health (no login needed):
+     curl -sL -X POST -H "Content-Type: text/plain" \
+       -d '{"action":"health"}' "<WEB_APP_URL>"
+   Expected: {"ok":true,"data":{"status":"ok","apiVersion":"1.0.0",...,"validationMode":"pilot","schema":"ok"}}
+   A wrong login must return {"ok":false,"error":{"code":"AUTH",...}}.
+   (-L is required: Apps Script answers with a redirect.)
+   Do NOT put the real password into shell history on a shared machine.
+
+9. GIVE THE URL TO THE APP BUILD
+   - Put the URL in eas.json (profiles "preview" and "production" -> env -> EXPO_PUBLIC_API_URL).
+   - See the main project instructions for the build commands.
+
+UPDATING THE CODE LATER
+   - Edit the files, then Deploy -> Manage deployments -> pencil icon on the existing deployment ->
+     Version: New version -> Deploy. The URL stays the same, so installed apps keep working.
+   - "New deployment" creates a DIFFERENT URL and would require rebuilding the app.
+
+ADMINISTRATOR FUNCTIONS (select in the editor, then Run)
+   showStatus          Non-secret configuration summary in the log.
+   signOutEveryone     Invalidates every phone's session immediately.
+   rotateTokenSecret   New signing secret (also signs everyone out).
+   clearLoginLockout   Lifts a lockout (any 5 failed logins lock sign-in for 15 minutes, for everyone).
+   repairIntegrity     Completes/rolls back an interrupted write and repairs BatteryCells <-> CellMeta mismatches.
+   setupCredentials    Change the shared password: set ADMIN_USERNAME and ADMIN_PASSWORD again, run it
+                       (this signs everyone out and deletes the temporary properties).
+
+SWITCHING MODES
+   - VALIDATION_MODE=pilot       Pilot: records are stored with ValidationStatus UNVERIFIED.
+   - anything else               Strict production: every scan is rejected until real rules are implemented
+                                 in validatePayloadForMode (Utils.gs) from verified QR samples.
+
+SHEET RULES
+   - Do not reorder, rename, insert or delete columns/headers in any tab.
+   - Do not hand-edit Serial Number, CellMeta or AuditLog. Measurement columns (D, E, F, H, I, J, K) may be
+     edited by an administrator; the app reads numbers back as numbers.
+   - AuditLog is append-only history (create, update with before/after, delete with the full record).
+
+KNOWN LIMITATIONS
+   - Apps Script web apps cannot read request headers, so the session token travels in the JSON body (HTTPS).
+   - Each write waits for a shared lock; with 1-2 phones this is quick. Expect ~1-3 seconds per request.
+   - There is one global login lockout (no per-device identity), so repeated wrong passwords from anyone lock
+     sign-in for everyone until it expires or the administrator runs clearLoginLockout.
+   - If a failure leaves a half-finished write, list/get may briefly show it until the next write recovers it
+     (or until repairIntegrity is run).

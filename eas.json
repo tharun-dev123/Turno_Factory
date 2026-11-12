@@ -1,0 +1,30 @@
+{
+  "cli": {
+    "version": ">= 16.0.0",
+    "appVersionSource": "local"
+  },
+  "build": {
+    "preview": {
+      "distribution": "internal",
+      "android": {
+        "buildType": "apk"
+      },
+      "env": {
+        "EXPO_PUBLIC_DATA_MODE": "live",
+        "EXPO_PUBLIC_API_URL": "https://script.google.com/a/macros/turno.club/s/AKfycbyJGdQDE22FXeaVI9qhXoBS-BttuiFZMcry-e-Imw6P507d64NAZpNWTtooDo4tb9gP/exec"
+      }
+    },
+    "production": {
+      "android": {
+        "buildType": "app-bundle"
+      },
+      "env": {
+        "EXPO_PUBLIC_DATA_MODE": "live",
+        "EXPO_PUBLIC_API_URL": "https://script.google.com/a/macros/turno.club/s/AKfycbyJGdQDE22FXeaVI9qhXoBS-BttuiFZMcry-e-Imw6P507d64NAZpNWTtooDo4tb9gP/exec"
+      }
+    }
+  },
+  "submit": {
+    "production": {}
+  }
+}

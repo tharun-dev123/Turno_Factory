@@ -92,11 +92,11 @@ function toViewModel(result: ScanResultView): ViewModel {
       return {
         tone: 'danger',
         title: 'Registration Failed',
-        subtitle: 'The cell was not saved',
+        subtitle: 'Not confirmed • Scan the same cell again to retry',
         chip: { label: 'ERROR', icon: 'cancel', tone: 'danger' },
         banner: { icon: 'error-outline', text: result.message, tag: 'FAIL' },
         leftLabel: 'STATUS',
-        leftValue: 'NOT SAVED',
+        leftValue: 'UNCONFIRMED',
         rightLabel: 'DETECTED PAYLOAD',
         rightValue: result.rawPayload,
         rightCopyable: false,

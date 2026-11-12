@@ -65,3 +65,5 @@ jest.mock('expo-router', () => {
     Redirect: () => null,
   };
 });
+
+jest.mock('expo-crypto', () => ({ randomUUID: () => require('node:crypto').randomUUID() }));
