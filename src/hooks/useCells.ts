@@ -2,7 +2,7 @@ import { useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import type { CellRecord, CellStats } from '@/models/cell';
-import { getStats, searchCells } from '@/services/cellService';
+import { getCellsOverview } from '@/services/cellService';
 import { getErrorMessage } from '@/services/errors';
 
 type LoadState = 'loading' | 'ready' | 'error';
@@ -18,6 +18,8 @@ export function useCells() {
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const requestId = useRef(0);
+  // True once the list has loaded at least once; later reloads are silent so the list never blanks out.
+  const hasLoaded = useRef(false);
   const queryRef = useRef(query);
   useEffect(() => {
     queryRef.current = query;
@@ -28,8 +30,9 @@ export function useCells() {
     if (mode === 'initial') setState('loading');
     if (mode === 'refresh') setRefreshing(true);
     try {
-      const [list, nextStats] = await Promise.all([searchCells(search), getStats()]);
+      const { cells: list, stats: nextStats } = await getCellsOverview(search);
       if (id !== requestId.current) return; // a newer request superseded this one
+      hasLoaded.current = true;
       setCells(list);
       setStats(nextStats);
       setError(null);
@@ -57,8 +60,8 @@ export function useCells() {
   // Reload whenever the screen gains focus (new scans, edits and deletes happen elsewhere).
   useFocusEffect(
     useCallback(() => {
-      void load(queryRef.current, state === 'loading' ? 'initial' : 'silent');
-      // eslint-disable-next-line react-hooks/exhaustive-deps -- only react to focus changes
+      // Reload in the background on every focus; only the very first load shows the spinner.
+      void load(queryRef.current, hasLoaded.current ? 'silent' : 'initial');
     }, [load]),
   );
 

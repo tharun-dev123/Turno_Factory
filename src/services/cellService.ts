@@ -88,8 +88,7 @@ export async function getCell(id: string): Promise<CellRecord> {
 }
 
 /** Case-insensitive partial match on barcode or serial number (`#001`, `001`, `1`). */
-export async function searchCells(query: string): Promise<CellRecord[]> {
-  const cells = await listCells();
+function filterCells(cells: CellRecord[], query: string): CellRecord[] {
   const needle = query.trim().toLowerCase();
   if (needle === '') return cells;
 
@@ -107,8 +106,7 @@ export async function searchCells(query: string): Promise<CellRecord[]> {
   });
 }
 
-export async function getStats(): Promise<CellStats> {
-  const cells = await cellRepository.list();
+function computeStats(cells: CellRecord[]): CellStats {
   const now = Date.now();
   const startOfToday = new Date();
   startOfToday.setHours(0, 0, 0, 0);
@@ -121,6 +119,23 @@ export async function getStats(): Promise<CellStats> {
     if (now - created <= 24 * 3_600_000) addedLast24h += 1;
   }
   return { total: cells.length, addedToday, addedLast24h };
+}
+
+export async function searchCells(query: string): Promise<CellRecord[]> {
+  return filterCells(await listCells(), query);
+}
+
+export async function getStats(): Promise<CellStats> {
+  return computeStats(await cellRepository.list());
+}
+
+/**
+ * Matching cells plus the overall stats from ONE read of the data source. The All Cells screen uses this so a
+ * reload or search makes a single request instead of two.
+ */
+export async function getCellsOverview(query: string): Promise<{ cells: CellRecord[]; stats: CellStats }> {
+  const all = await listCells();
+  return { cells: filterCells(all, query), stats: computeStats(all) };
 }
 
 /** Most recently registered cell, or null when there are none. */

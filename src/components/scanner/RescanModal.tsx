@@ -105,7 +105,7 @@ export function RescanModal({ visible, cellId, onClose, onPicked }: RescanModalP
           />
         ) : (
           <View style={{ flex: 1, justifyContent: 'center' }}>
-            <ScannerFrame sizeIndex={1} hint={appConfig.scanner.alignHint} processing={checking} />
+            <ScannerFrame sizeIndex={1} status={checking ? 'checking' : 'ready'} label={checking ? 'CHECKING…' : appConfig.scanner.alignHint} />
           </View>
         )}
 

@@ -27,8 +27,22 @@ jest.mock('react-native-safe-area-context', () => require('react-native-safe-are
 
 jest.mock('expo-haptics', () => ({
   NotificationFeedbackType: { Success: 'success', Warning: 'warning', Error: 'error' },
+  ImpactFeedbackStyle: { Light: 'light', Medium: 'medium', Heavy: 'heavy' },
   notificationAsync: jest.fn(async () => undefined),
+  impactAsync: jest.fn(async () => undefined),
 }));
+
+jest.mock('expo-audio', () => {
+  const players = [];
+  globalThis.__audioPlayers = players;
+  return {
+    useAudioPlayer: jest.fn(() => {
+      const player = { seekTo: jest.fn(async () => undefined), play: jest.fn() };
+      players.push(player);
+      return player;
+    }),
+  };
+});
 
 jest.mock('expo-clipboard', () => ({ setStringAsync: jest.fn(async () => true) }));
 

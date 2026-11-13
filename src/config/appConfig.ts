@@ -76,6 +76,13 @@ export const appConfig = {
     enableDataMatrix: false,
     /** Ignore the same payload for this long to avoid repeated processing */
     cooldownMs: 2500,
+    /**
+     * After a successful registration the green result stays on screen this long, then the scanner continues
+     * automatically. Duplicates and errors always wait for the operator. 0 = always wait.
+     */
+    autoContinueMs: 1800,
+    /** Play a short sound on each scan result (in addition to vibration) */
+    soundEnabled: true,
     /** Alignment hint under the frame. Text is config-driven until the real format is confirmed. */
     alignHint: 'ALIGN QR CODE',
     /** Hint chip text; reflects the active validation mode honestly */

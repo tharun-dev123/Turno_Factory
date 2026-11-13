@@ -64,6 +64,11 @@ export const colors = {
   amber800: '#92400E',
   amber900: '#78350F',
 
+  // Status: in progress (scanner "checking")
+  blue400: '#60A5FA',
+  blue500: '#3B82F6',
+  blue600: '#2563EB',
+
   // Status: error
   red50: '#FEF2F2',
   red100: '#FEE2E2',
