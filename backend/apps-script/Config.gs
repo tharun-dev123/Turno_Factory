@@ -108,9 +108,12 @@ var PROP = {
   validationMode: 'VALIDATION_MODE', // 'pilot' enables pilot mode; anything else = strict production (rules pending)
   adminUsername: 'ADMIN_USERNAME', // temporary, deleted by setupCredentials()
   adminPassword: 'ADMIN_PASSWORD', // temporary, deleted by setupCredentials()
+  checkUsername: 'CHECK_USERNAME', // temporary, read and deleted by checkCredentials()
+  checkPassword: 'CHECK_PASSWORD', // temporary, read and deleted by checkCredentials()
   sessionHours: 'SESSION_HOURS', // optional, default 12
   maxFailedLogins: 'MAX_FAILED_LOGINS', // optional, default 5
   lockoutMinutes: 'LOCKOUT_MINUTES', // optional, default 15
+  loginDiagnostics: 'LOGIN_DIAGNOSTICS', // optional: "on" logs a description (never the value) of rejected logins
   // Managed by the backend itself:
   authUsername: 'AUTH_USERNAME',
   authPasswordRecord: 'AUTH_PASSWORD_RECORD',

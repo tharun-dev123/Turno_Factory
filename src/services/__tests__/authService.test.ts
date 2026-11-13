@@ -1,5 +1,6 @@
 import { AuthError, ValidationError } from '../errors';
-import { getSession, isAuthenticated, login, logout } from '../authService';
+import { getSession, isAuthenticated, login, logout, normalizeCredential } from '../authService';
+import { authBackend } from '../repository';
 
 const VALID = { username: 'Admin', password: 'admin@123' };
 
@@ -47,5 +48,42 @@ describe('authService', () => {
     } finally {
       Date.now = realNow;
     }
+  });
+
+  describe('whitespace in the username and password fields', () => {
+    it('accepts credentials pasted with leading/trailing spaces, tabs or line breaks', async () => {
+      const session = await login('  Admin \n', '\n admin@123 \r\n\t');
+      expect(session.username).toBe('Admin');
+      expect(await isAuthenticated()).toBe(true);
+    });
+
+    it('sends the trimmed values to the backend, keeping spaces inside the password', async () => {
+      const spy = jest.spyOn(authBackend, 'login').mockResolvedValue({ token: 't', username: 'Admin', expiresAt: new Date(Date.now() + 3_600_000).toISOString() });
+      try {
+        await login(' Admin\n', '  pass word 12\n  ');
+        expect(spy).toHaveBeenCalledWith('Admin', 'pass word 12');
+      } finally {
+        spy.mockRestore();
+      }
+    });
+
+    it('treats whitespace-only fields as empty and does not contact the backend', async () => {
+      const spy = jest.spyOn(authBackend, 'login');
+      try {
+        await expect(login(' \n ', '\t ')).rejects.toMatchObject({
+          code: 'VALIDATION',
+          fieldErrors: { username: 'Username is required.', password: 'Password is required.' },
+        });
+        expect(spy).not.toHaveBeenCalled();
+      } finally {
+        spy.mockRestore();
+      }
+    });
+
+    it('normalizeCredential trims only the edges', () => {
+      expect(normalizeCredential('\u00A0 a b \n')).toBe('a b');
+      expect(normalizeCredential('abc')).toBe('abc');
+      expect(normalizeCredential('   ')).toBe('');
+    });
   });
 });

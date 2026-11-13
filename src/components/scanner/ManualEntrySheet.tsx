@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { KeyboardAvoidingView, Modal, Platform, Pressable, View } from 'react-native';
+import { Modal, Pressable, View } from 'react-native';
 
 import { AppText } from '@/components/ui/AppText';
 import { Button } from '@/components/ui/Button';
+import { KeyboardAvoider } from '@/components/ui/KeyboardAware';
 import { TextField } from '@/components/ui/TextField';
 import { colors, radius, shadows } from '@/theme';
 
@@ -48,7 +49,7 @@ function ManualEntryBody({
   };
 
   return (
-    <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+    <KeyboardAvoider style={{ flex: 1 }}>
       <Pressable accessibilityLabel="Close" onPress={onClose} style={{ flex: 1, backgroundColor: colors.overlay, justifyContent: 'flex-end' }}>
         <Pressable
           accessible={false}
@@ -84,6 +85,6 @@ function ManualEntryBody({
           </View>
         </Pressable>
       </Pressable>
-    </KeyboardAvoidingView>
+    </KeyboardAvoider>
   );
 }

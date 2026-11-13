@@ -10,20 +10,18 @@ describe('All Cells screen', () => {
   it('shows stats and the list of seeded cells, newest first', async () => {
     await renderScreen(<AllCellsScreen />);
     expect(await screen.findByText('Battery Inventory')).toBeTruthy();
-    expect(await screen.findByText('Serial #020')).toBeTruthy();
-    expect(screen.getByText('20 Loaded')).toBeTruthy();
+    expect(await screen.findByText('02KCBE516100CHG702023970')).toBeTruthy();
     expect(screen.getByText('Total Cells')).toBeTruthy();
     expect(screen.getByText('20')).toBeTruthy();
   });
 
   it('filters by barcode and shows the no-match state', async () => {
     await renderScreen(<AllCellsScreen />);
-    await screen.findByText('Serial #020');
+    await screen.findByText('02KCBE516100CHG702023970');
     const search = screen.getByLabelText('Search cells');
 
     await fireEvent.changeText(search, 'CHG702022741');
-    expect(await screen.findByText('1 Found')).toBeTruthy();
-    expect(screen.getByText('02KCBE516100CHG702022741')).toBeTruthy();
+    expect(await screen.findByText('02KCBE516100CHG702022741')).toBeTruthy();
 
     await fireEvent.changeText(search, 'ZZZ-NOPE');
     expect(await screen.findByText('No matching cells')).toBeTruthy();

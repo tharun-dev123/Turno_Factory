@@ -48,4 +48,12 @@ describe('Login screen', () => {
     await fireEvent.press(toggle);
     expect(await screen.findByLabelText('Hide password')).toBeTruthy();
   });
+
+  it('signs in when the credentials were pasted with extra spaces or a line break', async () => {
+    await renderScreen(<LoginScreen />);
+    await fireEvent.changeText(await screen.findByLabelText('Username'), ' Admin \n');
+    await fireEvent.changeText(screen.getByLabelText('Password'), 'admin@123\n  ');
+    await fireEvent.press(screen.getByLabelText('Sign In to Terminal'));
+    await waitFor(() => expect(testGlobals.__router.replace).toHaveBeenCalledWith('/(tabs)/cells'));
+  });
 });

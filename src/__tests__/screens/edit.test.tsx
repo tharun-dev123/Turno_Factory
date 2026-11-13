@@ -13,7 +13,7 @@ describe('Edit Cell screen', () => {
 
   it('loads the cell with a locked serial and no unsaved changes', async () => {
     await renderScreen(<EditCellScreen />);
-    expect(await screen.findByText('Edit Cell #001')).toBeTruthy();
+    expect(await screen.findByText('Edit Cell')).toBeTruthy();
     expect(screen.getByLabelText('Serial number (read-only)').props.editable).toBe(false);
     expect(screen.queryByText('Unsaved Changes')).toBeNull();
     expect(screen.getByLabelText('Save Changes').props.accessibilityState.disabled).toBe(true);

@@ -178,3 +178,167 @@ describe('credential storage', () => {
     expect(everything).not.toContain(b.props.getProperty('AUTH_PASSWORD_RECORD'));
   });
 });
+
+describe('credential robustness', () => {
+  function configured(username, password) {
+    const b = createBackend({ configure: false });
+    b.props.setProperty('ADMIN_USERNAME', username);
+    b.props.setProperty('ADMIN_PASSWORD', password);
+    b.ctx.initializeBackend();
+    return b;
+  }
+
+  it('the username is not case-sensitive', () => {
+    const b = configured('Admin', 'TurnoDemo2026Scan');
+    b.ctx.setupCredentials();
+    for (const username of ['Admin', 'admin', 'ADMIN', '  admin ']) {
+      expect(b.send({ action: 'auth.login', payload: { username, password: 'TurnoDemo2026Scan' } }).ok).toBe(true);
+    }
+    expect(b.send({ action: 'auth.login', payload: { username: 'admin2', password: 'TurnoDemo2026Scan' } }).ok).toBe(false);
+  });
+
+  it('the password stays case-sensitive', () => {
+    const b = configured('Admin', 'TurnoDemo2026Scan');
+    b.ctx.setupCredentials();
+    expect(b.send({ action: 'auth.login', payload: { username: 'Admin', password: 'turnodemo2026scan' } }).ok).toBe(false);
+  });
+
+  it.each([
+    ['a trailing space', 'TurnoDemo2026Scan '],
+    ['a leading space', ' TurnoDemo2026Scan'],
+    ['a trailing line break', 'TurnoDemo2026Scan\n'],
+    ['an inner line break', 'TurnoDemo\n2026Scan'],
+  ])('refuses a password with %s instead of storing it invisibly', (_label, password) => {
+    const b = configured('Admin', password);
+    expect(() => b.ctx.setupCredentials()).toThrow(/space or line break|control character/);
+    expect(b.props.getProperty('AUTH_PASSWORD_RECORD')).toBeNull();
+    expect(b.props.getProperty('ADMIN_PASSWORD')).not.toBeNull(); // left in place so it can be corrected
+  });
+
+  it('logs the username and password length (never the password) after setup', () => {
+    const b = configured('Admin', 'TurnoDemo2026Scan');
+    b.ctx.setupCredentials();
+    const log = b.logs.join('\n');
+    expect(log).toContain('Username: "Admin"');
+    expect(log).toContain('Password length: 17 characters');
+    expect(log).not.toContain('TurnoDemo2026Scan');
+  });
+
+  it('checkCredentials reports matches without logging in, counting a failure, or revealing the password', () => {
+    const b = configured('Admin', 'TurnoDemo2026Scan');
+    b.ctx.setupCredentials();
+    const run = (user, password) => {
+      b.logs.length = 0;
+      b.props.setProperty('CHECK_USERNAME', user);
+      b.props.setProperty('CHECK_PASSWORD', password);
+      b.ctx.checkCredentials();
+      expect(b.props.getProperty('CHECK_USERNAME')).toBeNull();
+      expect(b.props.getProperty('CHECK_PASSWORD')).toBeNull();
+      expect(b.logs.join('\n')).not.toContain(password);
+      return JSON.parse(b.logs[b.logs.length - 1]);
+    };
+    expect(run('admin', 'TurnoDemo2026Scan')).toMatchObject({ usernameMatches: true, usernameMatchesExactCase: false, passwordMatches: true });
+    expect(run('Admin', 'TurnoDemo2026Scan ')).toMatchObject({ passwordMatches: false, checkedPasswordHasEdgeWhitespace: true });
+    expect(run('Admin', 'wrong-password-1')).toMatchObject({ passwordMatches: false, failedAttemptsInWindow: 0, lockedOut: false });
+    expect(() => b.ctx.checkCredentials()).toThrow(/CHECK_USERNAME/);
+  });
+});
+
+describe('login diagnostics', () => {
+  function setup() {
+    const b = createBackend({ configure: false });
+    b.props.setProperty('ADMIN_USERNAME', 'Admin');
+    b.props.setProperty('ADMIN_PASSWORD', 'TurnoScan-2026ab');
+    b.ctx.initializeBackend();
+    b.ctx.setupCredentials();
+    b.logs.length = 0;
+    return b;
+  }
+
+  it('logs and stores nothing about rejected logins unless LOGIN_DIAGNOSTICS is on', () => {
+    const b = setup();
+    b.send({ action: 'auth.login', payload: { username: 'Admin', password: 'TurnoScan–2026ab' } });
+    expect(b.logs.join('\n')).not.toContain('LOGIN REJECTED');
+    expect(b.props.getProperty('LAST_LOGIN_REJECTION')).toBeNull();
+  });
+
+  it('flags invisible characters (e.g. a zero-width space) by code', () => {
+    const b = setup();
+    b.props.setProperty('LOGIN_DIAGNOSTICS', 'on');
+    b.send({ action: 'auth.login', payload: { username: 'Admin\u200B', password: 'TurnoScan-2026ab' } });
+    const info = JSON.parse(b.props.getProperty('LAST_LOGIN_REJECTION'));
+    expect(info.usernameMatches).toBe(false);
+    expect(info.receivedUsername.unusualCharacters).toEqual(['U+200B']);
+  });
+
+  it('describes a rejected password by length and character classes, never its value', () => {
+    const b = setup();
+    b.props.setProperty('LOGIN_DIAGNOSTICS', 'on');
+    // an en-dash instead of a hyphen, as some phone keyboards produce
+    const sent = 'TurnoScan–2026ab';
+    b.send({ action: 'auth.login', payload: { username: ' admin ', password: sent } });
+    const line = b.logs.find((l) => l.startsWith('LOGIN REJECTED'));
+    expect(line).toBeTruthy();
+    expect(line).not.toContain(sent);
+    expect(line).not.toContain('TurnoScan');
+    expect(line).not.toContain('admin');
+    const info = JSON.parse(line.replace('LOGIN REJECTED ', ''));
+    expect(info).toMatchObject({
+      storedUsername: 'Admin',
+      usernameMatches: true,
+      passwordMatches: false,
+      receivedUsername: { length: 7, hasEdgeWhitespace: true, characterClasses: { lowercase: 5, spaces: 2 } },
+      receivedPassword: {
+        length: 16,
+        hasEdgeWhitespace: false,
+        characterClasses: { nonAscii: 1, otherAscii: 0, digits: 4 },
+        unusualCharacters: ['U+2013'],
+      },
+    });
+    // The same description is kept in a Script Property (phone runs have no visible logs).
+    expect(JSON.parse(b.props.getProperty('LAST_LOGIN_REJECTION'))).toEqual(info);
+  });
+
+  it('checkCredentials reports the same character-class description for comparison', () => {
+    const b = setup();
+    b.props.setProperty('CHECK_USERNAME', 'Admin');
+    b.props.setProperty('CHECK_PASSWORD', 'TurnoScan-2026ab');
+    b.ctx.checkCredentials();
+    const info = JSON.parse(b.logs[b.logs.length - 1]);
+    expect(info.checkedPassword).toEqual({
+      length: 16,
+      hasEdgeWhitespace: false,
+      characterClasses: { lowercase: 9, uppercase: 2, digits: 4, spaces: 0, otherAscii: 1, nonAscii: 0 },
+      unusualCharacters: [],
+    });
+    expect(b.logs.join('\n')).not.toContain('TurnoScan');
+  });
+});
+
+describe('pasted passwords', () => {
+  function setup() {
+    const b = createBackend({ configure: false });
+    b.props.setProperty('ADMIN_USERNAME', 'Admin');
+    b.props.setProperty('ADMIN_PASSWORD', 'abcd1234567890X@');
+    b.ctx.initializeBackend();
+    b.ctx.setupCredentials();
+    return b;
+  }
+  const login = (b, password) => b.send({ action: 'auth.login', payload: { username: 'Admin', password } });
+
+  it.each([
+    ['a trailing line break + spaces (phone paste)', 'abcd1234567890X@\n  '],
+    ['leading spaces + line break', '  \nabcd1234567890X@'],
+    ['a trailing tab', 'abcd1234567890X@\t'],
+    ['a Windows line ending', 'abcd1234567890X@\r\n'],
+  ])('accepts the right password with %s', (_label, password) => {
+    expect(login(setup(), password).ok).toBe(true);
+  });
+
+  it('still rejects a password that only differs inside, or is only whitespace', () => {
+    const b = setup();
+    expect(login(b, 'abcd 1234567890X@').ok).toBe(false);
+    expect(login(b, 'abcd1234567890X').ok).toBe(false);
+    expect(login(b, '   \n ').ok).toBe(false);
+  });
+});

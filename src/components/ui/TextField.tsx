@@ -1,10 +1,11 @@
-import { useState, type ComponentRef, type ReactNode, type Ref } from 'react';
+import { useRef, useState, type ComponentRef, type ReactNode, type Ref } from 'react';
 import { TextInput, View, type StyleProp, type TextInputProps, type ViewStyle } from 'react-native';
 
 import { colors, fontFamily, radius } from '@/theme';
 
 import { AppText } from './AppText';
 import { Icon, type IconName } from './Icon';
+import { useEnsureFieldVisible } from './KeyboardAware';
 
 /** Instance type of a TextInput (use with `useRef<TextInputHandle>(null)` to call `focus()`). */
 export type TextInputHandle = ComponentRef<typeof TextInput>;
@@ -36,10 +37,12 @@ export function TextField({
   ...inputProps
 }: TextFieldProps) {
   const [focused, setFocused] = useState(false);
+  const wrapperRef = useRef<ComponentRef<typeof View>>(null);
+  const ensureVisible = useEnsureFieldVisible();
   const borderColor = error ? colors.red600 : focused ? colors.turnoRed : colors.border;
 
   return (
-    <View style={[{ gap: 6 }, containerStyle]}>
+    <View ref={wrapperRef} style={[{ gap: 6 }, containerStyle]}>
       {label ? (
         <AppText variant="labelLg" color={colors.text} style={{ fontSize: 14 }}>
           {label}
@@ -67,6 +70,7 @@ export function TextField({
           placeholderTextColor={colors.slate400}
           onFocus={(e) => {
             setFocused(true);
+            ensureVisible?.(wrapperRef);
             inputProps.onFocus?.(e);
           }}
           onBlur={(e) => {

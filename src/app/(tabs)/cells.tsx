@@ -6,6 +6,7 @@ import { StatCard } from '@/components/cells/StatCard';
 import { AppText } from '@/components/ui/AppText';
 import { BrandHeader } from '@/components/ui/BrandHeader';
 import { IconButton } from '@/components/ui/IconButton';
+import { KeyboardAvoider } from '@/components/ui/KeyboardAware';
 import { Pill } from '@/components/ui/Pill';
 import { SearchBar } from '@/components/ui/SearchBar';
 import { LoadingState, MessageState } from '@/components/ui/StateViews';
@@ -13,7 +14,7 @@ import { TurnoLogo } from '@/components/ui/TurnoLogo';
 import { appConfig } from '@/config/appConfig';
 import { useCells } from '@/hooks/useCells';
 import type { CellRecord } from '@/models/cell';
-import { colors, radius } from '@/theme';
+import { colors } from '@/theme';
 import { formatCount } from '@/utils/format';
 
 /** 03 - All Cells Dashboard */
@@ -25,26 +26,12 @@ export default function AllCellsScreen() {
   const searching = query.trim().length > 0;
 
   return (
-    <View style={{ flex: 1, backgroundColor: colors.background }}>
+    <KeyboardAvoider style={{ flex: 1, backgroundColor: colors.background }}>
       <BrandHeader>
         <View style={{ gap: 12 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
               <TurnoLogo height={28} />
-              <View
-                style={{
-                  paddingHorizontal: 8,
-                  paddingVertical: 3,
-                  borderRadius: radius.md,
-                  backgroundColor: colors.slate100,
-                  borderWidth: 1,
-                  borderColor: colors.slate200,
-                }}
-              >
-                <AppText variant="labelSm" color={colors.slate700} style={{ fontSize: 11 }}>
-                  {appConfig.station.name}
-                </AppText>
-              </View>
             </View>
             <IconButton icon="refresh" accessibilityLabel="Refresh inventory" onPress={refresh} />
           </View>
@@ -70,6 +57,7 @@ export default function AllCellsScreen() {
         ItemSeparatorComponent={() => <View style={{ height: 10 }} />}
         contentContainerStyle={{ padding: 16, paddingBottom: 24 }}
         keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag"
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} tintColor={colors.turnoRed} colors={[colors.turnoRed]} />}
         ListHeaderComponent={
           <View style={{ gap: 16, marginBottom: 14 }}>
@@ -97,7 +85,6 @@ export default function AllCellsScreen() {
               <AppText variant="overline" color={colors.slate600} style={{ fontSize: 12 }}>
                 Registered Batch Registry
               </AppText>
-              {state === 'ready' ? <Pill label={`${formatCount(cells.length)} ${searching ? 'Found' : 'Loaded'}`} tone="brand" size="sm" /> : null}
             </View>
           </View>
         }
@@ -126,6 +113,6 @@ export default function AllCellsScreen() {
           )
         }
       />
-    </View>
+    </KeyboardAvoider>
   );
 }

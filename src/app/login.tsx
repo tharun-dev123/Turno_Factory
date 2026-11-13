@@ -1,12 +1,13 @@
 import { Redirect, useRouter } from 'expo-router';
 import { useRef, useState } from 'react';
-import { KeyboardAvoidingView, Platform, Pressable, ScrollView, View } from 'react-native';
+import { Pressable, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AppText } from '@/components/ui/AppText';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Icon } from '@/components/ui/Icon';
+import { KeyboardAvoider, KeyboardAwareScrollView } from '@/components/ui/KeyboardAware';
 import { TextField, type TextInputHandle } from '@/components/ui/TextField';
 import { TurnoLogo } from '@/components/ui/TurnoLogo';
 import { appConfig } from '@/config/appConfig';
@@ -50,10 +51,10 @@ export default function LoginScreen() {
   };
 
   return (
-    <KeyboardAvoidingView style={{ flex: 1, backgroundColor: colors.background }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <ScrollView
+    <KeyboardAvoider style={{ flex: 1, backgroundColor: colors.background }}>
+      <KeyboardAwareScrollView
         contentContainerStyle={{ flexGrow: 1, paddingTop: insets.top + 16, paddingBottom: insets.bottom + 24, paddingHorizontal: 20 }}
-        keyboardShouldPersistTaps="handled"
+        scrollMargin={96} // keeps the Sign In button visible under the focused field
       >
         <View style={{ paddingVertical: 8 }}>
           <TurnoLogo height={44} />
@@ -81,6 +82,7 @@ export default function LoginScreen() {
               autoComplete="username"
               textContentType="username"
               returnKeyType="next"
+              submitBehavior="submit" // keep the keyboard open while moving to the password field
               onSubmitEditing={() => passwordRef.current?.focus()}
               error={fieldErrors.username}
             />
@@ -166,7 +168,7 @@ export default function LoginScreen() {
             v{appConfig.version} • Turno Battery Ops Build {appConfig.buildNumber}
           </AppText>
         </View>
-      </ScrollView>
-    </KeyboardAvoidingView>
+      </KeyboardAwareScrollView>
+    </KeyboardAvoider>
   );
 }

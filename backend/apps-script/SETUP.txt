@@ -98,7 +98,11 @@ ADMINISTRATOR FUNCTIONS (select in the editor, then Run)
    clearLoginLockout   Lifts a lockout (any 5 failed logins lock sign-in for 15 minutes, for everyone).
    repairIntegrity     Completes/rolls back an interrupted write and repairs BatteryCells <-> CellMeta mismatches.
    setupCredentials    Change the shared password: set ADMIN_USERNAME and ADMIN_PASSWORD again, run it
-                       (this signs everyone out and deletes the temporary properties).
+                       (this signs everyone out and deletes the temporary properties). TYPE the password into
+                       the box; a pasted value with a trailing space or line break is refused.
+   checkCredentials    Check a username/password WITHOUT logging in: set CHECK_USERNAME and CHECK_PASSWORD,
+                       run it, read the log (usernameMatches / passwordMatches). Deleted afterwards.
+                       Usernames are not case-sensitive; passwords are.
 
 SWITCHING MODES
    - VALIDATION_MODE=pilot       Pilot: records are stored with ValidationStatus UNVERIFIED.

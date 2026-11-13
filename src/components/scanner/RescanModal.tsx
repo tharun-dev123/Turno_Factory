@@ -7,6 +7,7 @@ import { AppText } from '@/components/ui/AppText';
 import { Button } from '@/components/ui/Button';
 import { Icon } from '@/components/ui/Icon';
 import { IconButton } from '@/components/ui/IconButton';
+import { KeyboardAvoider, useKeyboardVisible } from '@/components/ui/KeyboardAware';
 import { TextField } from '@/components/ui/TextField';
 import { appConfig, getScannerBarcodeTypes } from '@/config/appConfig';
 import type { ScanSource } from '@/models/cell';
@@ -28,6 +29,7 @@ export interface RescanModalProps {
 /** Full-screen rescan used by Edit Cell ("Rescan" next to the barcode). Also allows typing the barcode. */
 export function RescanModal({ visible, cellId, onClose, onPicked }: RescanModalProps) {
   const insets = useSafeAreaInsets();
+  const keyboardVisible = useKeyboardVisible();
   const [permission, requestPermission] = useCameraPermissions();
   const [torchOn, setTorchOn] = useState(false);
   const [manualText, setManualText] = useState('');
@@ -70,7 +72,7 @@ export function RescanModal({ visible, cellId, onClose, onPicked }: RescanModalP
 
   return (
     <Modal visible={visible} animationType="slide" statusBarTranslucent onRequestClose={close}>
-      <View style={{ flex: 1, backgroundColor: colors.scannerBackdrop }}>
+      <KeyboardAvoider style={{ flex: 1, backgroundColor: colors.scannerBackdrop }}>
         {visible && permission?.granted ? (
           <CameraView
             style={StyleSheet.absoluteFill}
@@ -110,7 +112,7 @@ export function RescanModal({ visible, cellId, onClose, onPicked }: RescanModalP
         <View
           style={{
             margin: 12,
-            marginBottom: insets.bottom + 12,
+            marginBottom: (keyboardVisible ? 0 : insets.bottom) + 12,
             padding: 14,
             gap: 12,
             borderRadius: radius.xxl,
@@ -146,7 +148,7 @@ export function RescanModal({ visible, cellId, onClose, onPicked }: RescanModalP
             </AppText>
           </Pressable>
         </View>
-      </View>
+      </KeyboardAvoider>
     </Modal>
   );
 }

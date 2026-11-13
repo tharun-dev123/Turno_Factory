@@ -10,6 +10,7 @@ import { Card } from '@/components/ui/Card';
 import { Icon, type IconName } from '@/components/ui/Icon';
 import { Pill } from '@/components/ui/Pill';
 import { useToast } from '@/components/ui/Toast';
+import { TurnoLogo } from '@/components/ui/TurnoLogo';
 import { appConfig } from '@/config/appConfig';
 import { useAuth } from '@/context/AuthContext';
 import { getErrorMessage } from '@/services/errors';
@@ -68,15 +69,19 @@ export default function SettingsScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       <BrandHeader>
-        <AppText variant="headlineMd" accessibilityRole="header" style={{ fontFamily: 'HankenGrotesk_800ExtraBold', fontSize: 22 }}>
-          Settings & Preferences
-        </AppText>
+        <View style={{ gap: 12 }}>
+          <TurnoLogo height={28} />
+          <AppText variant="headlineMd" accessibilityRole="header" style={{ fontFamily: 'HankenGrotesk_800ExtraBold', fontSize: 22 }}>
+            Settings & Preferences
+          </AppText>
+        </View>
       </BrandHeader>
 
       <ScrollView contentContainerStyle={{ padding: 16, gap: 16 }}>
-        <AppText variant="overline" color={colors.slate500} style={{ fontSize: 12, paddingHorizontal: 4 }}>
-          Section 03 ▪ System & Logout
-        </AppText>
+        <Card style={{ borderRadius: radius.xxl, paddingVertical: 8 }}>
+          <InfoRow icon="badge" label="Signed in as" value={session?.username ?? '—'} />
+          <InfoRow icon="storage" label="Data source" value={`${appConfig.storage.name} (${appConfig.dataMode})`} />
+        </Card>
 
         <Card style={{ gap: 4, borderRadius: radius.xxl }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
@@ -113,23 +118,6 @@ export default function SettingsScreen() {
             variant="outlineDanger"
             onPress={() => setConfirmVisible(true)}
             testID="logout-button"
-          />
-        </Card>
-
-        <Card style={{ borderRadius: radius.xxl, paddingVertical: 8 }}>
-          <InfoRow icon="badge" label="Signed in as" value={session?.username ?? '—'} />
-          <InfoRow icon="precision-manufacturing" label="Station / Line" value={`${appConfig.station.name} • ${appConfig.line.label}`} />
-          <InfoRow icon="storage" label="Data source" value={`${appConfig.storage.name} (${appConfig.dataMode})`} />
-          <InfoRow
-            icon="verified-user"
-            label="Barcode validation"
-            value={
-              appConfig.validationMode === 'development'
-                ? 'Development (any QR payload)'
-                : appConfig.validationMode === 'server'
-                  ? 'Server-controlled (pilot records are UNVERIFIED)'
-                  : 'Production (strict)'
-            }
           />
         </Card>
       </ScrollView>

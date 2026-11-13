@@ -10,11 +10,10 @@ describe('Settings screen', () => {
     await login('Admin', 'admin@123');
   });
 
-  it('shows the version, environment and validation mode', async () => {
+  it('shows the version, environment and signed-in user', async () => {
     await renderScreen(<SettingsScreen />);
     expect(await screen.findByText('Settings & Preferences')).toBeTruthy();
     expect(screen.getByText('Application Version')).toBeTruthy();
-    expect(screen.getByText('Development (any QR payload)')).toBeTruthy();
     expect(await screen.findByText('Admin')).toBeTruthy();
   });
 

@@ -2,8 +2,6 @@ import { Pressable, View } from 'react-native';
 
 import { AppText } from '@/components/ui/AppText';
 import { Icon } from '@/components/ui/Icon';
-import { Pill } from '@/components/ui/Pill';
-import { SyncBadge } from '@/components/ui/SyncBadge';
 import type { CellRecord } from '@/models/cell';
 import { colors, radius, shadows } from '@/theme';
 import { formatSerial } from '@/utils/format';
@@ -46,14 +44,10 @@ export function CellListItem({ cell, onPress }: CellListItemProps) {
           justifyContent: 'center',
         }}
       >
-        <Icon name="barcode-reader" size={20} color={colors.slate700} />
+        <Icon name="battery-std" size={22} color={colors.slate700} />
       </View>
 
-      <View style={{ flex: 1, gap: 4 }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-          <Pill label={`Serial ${formatSerial(cell.serialNumber)}`} tone="brand" square size="sm" />
-          <SyncBadge status={cell.syncStatus} />
-        </View>
+      <View style={{ flex: 1 }}>
         <AppText variant="monoMd" color={colors.slate700} numberOfLines={1} style={{ fontSize: 12.5 }}>
           {cell.batteryBarcode}
         </AppText>

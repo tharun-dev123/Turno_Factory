@@ -6,7 +6,7 @@ import { Icon, type IconName } from '@/components/ui/Icon';
 import { colors, radius, shadows } from '@/theme';
 
 /** A titled card with a red marker, used for the Section 1-3 blocks on Cell Details. */
-export function DetailSection({ title, meta, children }: { title: string; meta: string; children: ReactNode }) {
+export function DetailSection({ title, meta, children }: { title: string; meta?: string; children: ReactNode }) {
   return (
     <View style={[{ backgroundColor: colors.surface, borderRadius: radius.xxl, borderWidth: 1, borderColor: colors.slate200, overflow: 'hidden' }, shadows.card]}>
       <View
@@ -28,9 +28,11 @@ export function DetailSection({ title, meta, children }: { title: string; meta: 
             {title}
           </AppText>
         </View>
-        <AppText variant="overline" color={colors.slate400} style={{ fontSize: 11 }}>
-          {meta}
-        </AppText>
+        {meta ? (
+          <AppText variant="overline" color={colors.slate400} style={{ fontSize: 11 }}>
+            {meta}
+          </AppText>
+        ) : null}
       </View>
       {children}
     </View>

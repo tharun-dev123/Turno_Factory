@@ -14,11 +14,10 @@ async function scan(payload: string) {
 describe('Scan screen', () => {
   beforeEach(() => jest.clearAllMocks());
 
-  it('shows the camera, the dev-mode hint and the last scanned cell', async () => {
+  it('shows the camera and the manual entry button', async () => {
     await renderScreen(<ScanScreen />);
     expect(await screen.findByTestId('camera')).toBeTruthy();
-    expect(screen.getByText('Dev mode: any QR payload accepted')).toBeTruthy();
-    expect(await screen.findByText('LAST SCANNED CELL', { exact: false })).toBeTruthy();
+    expect(await screen.findByLabelText('Enter barcode manually')).toBeTruthy();
   });
 
   it('registers a new code, preserving it, and shows the success card', async () => {
