@@ -11,7 +11,7 @@ export interface ConfirmDialogProps {
   icon: IconName;
   title: string;
   /** Body text; may contain nested <AppText> for emphasis */
-  message: ReactNode;
+  message?: ReactNode;
   /** Optional details block rendered between the message and the actions */
   children?: ReactNode;
   /** Optional red warning box */
@@ -79,9 +79,11 @@ export function ConfirmDialog({
             <AppText variant="headlineMd" align="center" accessibilityRole="header">
               {title}
             </AppText>
-            <AppText variant="bodyMd" color={colors.textMuted} align="center" style={{ lineHeight: 22 }}>
-              {message}
-            </AppText>
+            {message ? (
+              <AppText variant="bodyMd" color={colors.textMuted} align="center" style={{ lineHeight: 22 }}>
+                {message}
+              </AppText>
+            ) : null}
           </View>
 
           {children ? <View style={{ alignSelf: 'stretch' }}>{children}</View> : null}

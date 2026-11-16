@@ -113,7 +113,7 @@ export default function SettingsScreen() {
           <View style={{ height: 1, backgroundColor: colors.slate100, marginVertical: 12 }} />
 
           <Button
-            label="Log Out of Terminal"
+            label="Log Out"
             icon="logout"
             variant="outlineDanger"
             onPress={() => setConfirmVisible(true)}
@@ -124,7 +124,6 @@ export default function SettingsScreen() {
 
       <LogoutDialog
         visible={confirmVisible}
-        username={session?.username ?? null}
         loading={signingOut}
         onConfirm={onLogout}
         onCancel={() => setConfirmVisible(false)}

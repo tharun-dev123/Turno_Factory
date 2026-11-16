@@ -134,7 +134,7 @@ export default function LoginScreen() {
               </View>
             ) : null}
 
-            <Button label="Sign In to Terminal" iconRight="arrow-forward" onPress={onSubmit} loading={submitting} style={{ marginTop: 4 }} />
+            <Button label="Sign In" iconRight="arrow-forward" onPress={onSubmit} loading={submitting} style={{ marginTop: 4 }} />
 
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 4 }}>
               <Icon name="verified-user" size={16} color={colors.slate400} />
