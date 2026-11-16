@@ -88,7 +88,7 @@ export function SelectField({ label, value, options, placeholder = 'Select...', 
                     <AppText variant="bodyMd" color={item === null ? colors.textMuted : colors.text} style={{ fontFamily: selected ? 'Manrope_700Bold' : 'Manrope_500Medium', flex: 1 }}>
                       {item ?? 'Not set'}
                     </AppText>
-                    {selected ? <Icon name="check" size={20} color={colors.turnoRed} /> : null}
+                    {selected ? <Icon name="check" size={20} color={colors.turnoOrange} /> : null}
                   </Pressable>
                 );
               }}

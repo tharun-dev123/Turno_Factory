@@ -58,7 +58,7 @@ export default function AllCellsScreen() {
         contentContainerStyle={{ padding: 16, paddingBottom: 24 }}
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="on-drag"
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} tintColor={colors.turnoRed} colors={[colors.turnoRed]} />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} tintColor={colors.turnoOrange} colors={[colors.turnoOrange]} />}
         ListHeaderComponent={
           <View style={{ gap: 16, marginBottom: 14 }}>
             <View style={{ flexDirection: 'row', gap: 12 }}>

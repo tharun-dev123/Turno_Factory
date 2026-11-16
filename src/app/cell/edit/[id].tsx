@@ -126,7 +126,7 @@ function EditForm({ cell }: { cell: CellRecord }) {
         {/* Summary card (same layout as Cell Details; Rescan replaces Copy) */}
         <Card style={{ gap: 10, borderRadius: radius.xxl }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, padding: 12, borderRadius: radius.xl, backgroundColor: colors.slate50, borderWidth: 1, borderColor: colors.slate200 }}>
-            <Icon name="battery-charging-full" size={24} color={colors.turnoRed} />
+            <Icon name="battery-charging-full" size={24} color={colors.turnoOrange} />
             <AppText variant="monoLg" numberOfLines={1} ellipsizeMode="middle" selectable style={{ flex: 1 }}>
               {barcodeShown}
             </AppText>
@@ -142,12 +142,12 @@ function EditForm({ cell }: { cell: CellRecord }) {
                 paddingVertical: 8,
                 borderRadius: radius.lg,
                 borderWidth: 1,
-                borderColor: colors.rose200,
-                backgroundColor: pressed ? colors.rose100 : colors.rose50,
+                borderColor: colors.orange200,
+                backgroundColor: pressed ? colors.orange100 : colors.orange50,
               })}
             >
-              <Icon name="qr-code-scanner" size={16} color={colors.turnoRed} />
-              <AppText variant="labelLg" color={colors.turnoRed} style={{ fontSize: 13 }}>
+              <Icon name="qr-code-scanner" size={16} color={colors.turnoOrange} />
+              <AppText variant="labelLg" color={colors.turnoOrange} style={{ fontSize: 13 }}>
                 Rescan
               </AppText>
             </Pressable>

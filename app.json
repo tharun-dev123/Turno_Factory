@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "Turno Battery Scanner",
+    "name": "Turno Factory",
     "slug": "turno-scanner",
     "version": "1.0.2",
     "orientation": "portrait",
@@ -30,7 +30,7 @@
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#F7F5F6",
+          "backgroundColor": "#F5F6F8",
           "image": "./assets/images/splash-icon.png",
           "imageWidth": 200
         }
@@ -38,7 +38,7 @@
       [
         "expo-camera",
         {
-          "cameraPermission": "Turno Battery Scanner needs the camera to scan battery cell codes.",
+          "cameraPermission": "Turno Factory needs the camera to scan battery cell codes.",
           "recordAudioAndroid": false
         }
       ],

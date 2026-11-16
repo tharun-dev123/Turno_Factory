@@ -11,7 +11,7 @@ FILES (paste each into the Apps Script editor, in this folder: backend/apps-scri
 
 
 1. CREATE THE PROJECT
-   - Go to https://script.google.com -> New project. Name it "Turno Battery Scanner API".
+   - Go to https://script.google.com -> New project. Name it "Turno Factory API".
    - (A standalone project is recommended. A script bound to the spreadsheet also works.)
 
 2. PASTE THE CODE

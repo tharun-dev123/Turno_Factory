@@ -23,7 +23,7 @@ export function DetailSection({ title, meta, children }: { title: string; meta?:
         }}
       >
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1 }}>
-          <View style={{ width: 5, height: 18, borderRadius: 3, backgroundColor: colors.turnoRed }} />
+          <View style={{ width: 5, height: 18, borderRadius: 3, backgroundColor: colors.turnoOrange }} />
           <AppText variant="overline" color={colors.slate800} style={{ fontSize: 12, flex: 1 }}>
             {title}
           </AppText>

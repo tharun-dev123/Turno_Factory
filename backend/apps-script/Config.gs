@@ -1,5 +1,5 @@
 /**
- * Turno Battery Scanner - Apps Script backend
+ * Turno Factory - Apps Script backend
  * File 1 of 6: Config.gs  (constants, sheet layout, Script Properties names)
  *
  * Paste all six .gs files and appsscript.json into the Apps Script editor of the

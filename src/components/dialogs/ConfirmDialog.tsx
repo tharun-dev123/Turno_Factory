@@ -65,14 +65,14 @@ export function ConfirmDialog({
               width: 64,
               height: 64,
               borderRadius: 32,
-              backgroundColor: colors.rose50,
+              backgroundColor: colors.orange50,
               borderWidth: 1,
-              borderColor: colors.rose100,
+              borderColor: colors.orange100,
               alignItems: 'center',
               justifyContent: 'center',
             }}
           >
-            <Icon name={icon} size={30} color={colors.turnoRed} />
+            <Icon name={icon} size={30} color={colors.turnoOrange} />
           </View>
 
           <View style={{ gap: 8, alignItems: 'center' }}>

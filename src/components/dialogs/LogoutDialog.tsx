@@ -52,7 +52,7 @@ export function LogoutDialog({ visible, username, loading, onConfirm, onCancel }
           borderColor: colors.slate200,
         }}
       >
-        <Icon name="badge" size={18} color={colors.turnoRed} />
+        <Icon name="badge" size={18} color={colors.turnoOrange} />
         <AppText variant="bodySm" color={colors.slate700} numberOfLines={1} style={{ flexShrink: 1 }}>
           Active Operator: {username ?? '—'} • Station: {appConfig.station.id}
         </AppText>

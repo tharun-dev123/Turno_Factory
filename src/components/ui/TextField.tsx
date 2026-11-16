@@ -39,7 +39,7 @@ export function TextField({
   const [focused, setFocused] = useState(false);
   const wrapperRef = useRef<ComponentRef<typeof View>>(null);
   const ensureVisible = useEnsureFieldVisible();
-  const borderColor = error ? colors.red600 : focused ? colors.turnoRed : colors.border;
+  const borderColor = error ? colors.red600 : focused ? colors.turnoOrange : colors.border;
 
   return (
     <View ref={wrapperRef} style={[{ gap: 6 }, containerStyle]}>

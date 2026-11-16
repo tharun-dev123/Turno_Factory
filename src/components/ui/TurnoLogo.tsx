@@ -1,10 +1,10 @@
 import { Image } from 'expo-image';
 import type { StyleProp, ImageStyle } from 'react-native';
 
-const logoSource = require('../../../assets/images/brand/turno-logo.png');
+const logoSource = require('../../../assets/images/brand/Turno_Logo.png');
 
 /** Aspect ratio of the cropped logo asset (width / height). */
-const LOGO_RATIO = 834 / 370;
+const LOGO_RATIO = 2170 / 725;
 
 export interface TurnoLogoProps {
   /** Rendered height in dp; width follows the aspect ratio. */

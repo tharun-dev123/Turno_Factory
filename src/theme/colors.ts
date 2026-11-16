@@ -4,10 +4,10 @@
  */
 export const colors = {
   // Brand
-  turnoRed: '#E9273B',
-  turnoRedHover: '#D31B2F',
-  turnoRedDark: '#C91832',
-  turnoRedLight: '#FFF1F2',
+  turnoOrange: '#FD5000',
+  turnoOrangePressed: '#D94300',
+  turnoOrangeLight: '#FFF0E8',
+  turnoOrangeSoft: '#FFF7F2',
 
   // Surfaces
   background: '#F5F6F8',
@@ -16,8 +16,8 @@ export const colors = {
   overlay: 'rgba(15, 23, 42, 0.45)',
 
   // Text
-  text: '#111827',
-  textMuted: '#6B7280',
+  text: '#252A34',
+  textMuted: '#687080',
   textSubtle: '#9CA3AF',
   textOnPrimary: '#FFFFFF',
 
@@ -37,10 +37,10 @@ export const colors = {
   slate800: '#1E293B',
   slate900: '#0F172A',
 
-  // Rose scale (brand tints)
-  rose50: '#FFF1F2',
-  rose100: '#FFE4E6',
-  rose200: '#FECDD3',
+  // Orange scale (brand tints)
+  orange50: '#FFF7F2',
+  orange100: '#FFF0E8',
+  orange200: '#FFD9C7',
 
   // Status: success
   emerald50: '#ECFDF5',

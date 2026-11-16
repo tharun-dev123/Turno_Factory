@@ -34,7 +34,7 @@ interface StatusStyle {
  * no longer reads as "error"; results switch the whole frame to green / amber / red.
  */
 const STATUS_STYLES: Record<ScannerStatus, StatusStyle> = {
-  ready: { accent: '#FFFFFF', inner: 'rgba(255,255,255,0.28)', tint: 'rgba(255,255,255,0.03)', icon: null, dot: colors.turnoRed, laser: true },
+  ready: { accent: '#FFFFFF', inner: 'rgba(255,255,255,0.28)', tint: 'rgba(255,255,255,0.03)', icon: null, dot: colors.turnoOrange, laser: true },
   checking: { accent: colors.blue400, inner: 'rgba(96,165,250,0.45)', tint: 'rgba(59,130,246,0.10)', icon: null, dot: colors.blue400, laser: false },
   success: { accent: colors.emerald500, inner: 'rgba(16,185,129,0.6)', tint: 'rgba(16,185,129,0.22)', icon: 'check-circle', dot: colors.emerald500, laser: false },
   duplicate: { accent: colors.amber500, inner: 'rgba(245,158,11,0.6)', tint: 'rgba(245,158,11,0.18)', icon: 'warning', dot: colors.amber500, laser: false },
@@ -156,8 +156,8 @@ export function ScannerFrame({ sizeIndex, status, label }: ScannerFrameProps) {
                 top: 0,
                 height: 2.5,
                 borderRadius: 2,
-                backgroundColor: colors.turnoRed,
-                shadowColor: colors.turnoRed,
+                backgroundColor: colors.turnoOrange,
+                shadowColor: colors.turnoOrange,
                 shadowOpacity: 0.9,
                 shadowRadius: 8,
                 shadowOffset: { width: 0, height: 0 },

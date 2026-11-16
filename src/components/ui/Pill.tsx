@@ -9,11 +9,11 @@ export type PillTone = 'neutral' | 'brand' | 'success' | 'warning' | 'danger' | 
 
 const TONES: Record<PillTone, { bg: string; border: string; fg: string; dot: string }> = {
   neutral: { bg: colors.slate100, border: colors.slate200, fg: colors.slate700, dot: colors.slate400 },
-  brand: { bg: colors.rose50, border: colors.rose200, fg: colors.turnoRed, dot: colors.turnoRed },
+  brand: { bg: colors.orange50, border: colors.orange200, fg: colors.turnoOrange, dot: colors.turnoOrange },
   success: { bg: colors.emerald50, border: colors.emerald200, fg: colors.emerald700, dot: colors.emerald500 },
   warning: { bg: colors.amber50, border: colors.amber200, fg: colors.amber800, dot: colors.amber500 },
   danger: { bg: colors.red50, border: colors.red200, fg: colors.red700, dot: colors.red600 },
-  dark: { bg: colors.slate900, border: colors.slate700, fg: '#FFFFFF', dot: colors.turnoRed },
+  dark: { bg: colors.slate900, border: colors.slate700, fg: '#FFFFFF', dot: colors.turnoOrange },
 };
 
 export interface PillProps {

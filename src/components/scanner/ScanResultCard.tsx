@@ -15,7 +15,7 @@ import { formatSerial } from '@/utils/format';
 type Tone = 'success' | 'warning' | 'danger';
 
 const TONE = {
-  success: { header: colors.emerald600, icon: 'check-circle' as IconName, iconColor: colors.emerald600, circleBg: colors.emerald50, circleBorder: colors.emerald200, bannerBg: 'rgba(236,253,245,0.7)', bannerBorder: 'rgba(167,243,208,0.6)', bannerText: colors.emerald900, bannerIcon: colors.emerald700, tag: colors.emerald600, accent: colors.turnoRed, stripe: null },
+  success: { header: colors.emerald600, icon: 'check-circle' as IconName, iconColor: colors.emerald600, circleBg: colors.emerald50, circleBorder: colors.emerald200, bannerBg: 'rgba(236,253,245,0.7)', bannerBorder: 'rgba(167,243,208,0.6)', bannerText: colors.emerald900, bannerIcon: colors.emerald700, tag: colors.emerald600, accent: colors.turnoOrange, stripe: null },
   warning: { header: colors.amber600, icon: 'warning' as IconName, iconColor: colors.amber600, circleBg: colors.amber50, circleBorder: colors.amber200, bannerBg: colors.amber50, bannerBorder: colors.amber200, bannerText: colors.amber900, bannerIcon: colors.amber800, tag: colors.amber600, accent: colors.amber600, stripe: colors.amber500 },
   danger: { header: colors.red600, icon: 'error' as IconName, iconColor: colors.red600, circleBg: colors.red50, circleBorder: colors.red200, bannerBg: colors.red50, bannerBorder: colors.red200, bannerText: colors.red900, bannerIcon: colors.red600, tag: colors.red600, accent: colors.red600, stripe: colors.red600 },
 };

@@ -12,7 +12,7 @@ const ICONS: Record<string, { icon: IconName; label: string }> = {
   settings: { icon: 'settings', label: 'Settings' },
 };
 
-const INACTIVE = '#687080';
+const INACTIVE = colors.textMuted;
 
 /** Bottom navigation: All Cells | Scan (elevated) | Settings, as in the Stitch design. */
 export function AppTabBar({ state, emitter, navigateToTab, insets }: BottomTabBarProps) {
@@ -56,12 +56,12 @@ export function AppTabBar({ state, emitter, navigateToTab, insets }: BottomTabBa
                   width: 56,
                   height: 56,
                   borderRadius: 28,
-                  backgroundColor: colors.turnoRed,
+                  backgroundColor: colors.turnoOrange,
                   alignItems: 'center',
                   justifyContent: 'center',
                   borderWidth: 4,
                   borderColor: colors.surface,
-                  shadowColor: colors.turnoRed,
+                  shadowColor: colors.turnoOrange,
                   shadowOpacity: 0.4,
                   shadowRadius: 10,
                   shadowOffset: { width: 0, height: 6 },
@@ -70,7 +70,7 @@ export function AppTabBar({ state, emitter, navigateToTab, insets }: BottomTabBa
               >
                 <Icon name="qr-code-scanner" size={28} color="#FFFFFF" />
               </View>
-              <AppText variant="labelSm" color={focused ? colors.turnoRed : colors.slate700} style={{ fontSize: 11, marginTop: 2 }}>
+              <AppText variant="labelSm" color={focused ? colors.turnoOrange : colors.slate700} style={{ fontSize: 11, marginTop: 2 }}>
                 Scan
               </AppText>
             </Pressable>
@@ -86,10 +86,10 @@ export function AppTabBar({ state, emitter, navigateToTab, insets }: BottomTabBa
             onPress={onPress}
             style={{ alignItems: 'center', justifyContent: 'center', minWidth: 72, height: TAB_BAR_HEIGHT }}
           >
-            <Icon name={meta.icon} size={24} color={focused ? colors.turnoRed : INACTIVE} />
+            <Icon name={meta.icon} size={24} color={focused ? colors.turnoOrange : INACTIVE} />
             <AppText
               variant="labelSm"
-              color={focused ? colors.turnoRed : INACTIVE}
+              color={focused ? colors.turnoOrange : INACTIVE}
               style={{ fontSize: 11, marginTop: 2, fontFamily: focused ? 'HankenGrotesk_700Bold' : 'HankenGrotesk_500Medium' }}
             >
               {meta.label}

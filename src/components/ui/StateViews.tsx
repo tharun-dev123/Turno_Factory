@@ -9,7 +9,7 @@ import { Icon, type IconName } from './Icon';
 export function LoadingState({ label = 'Loading...' }: { label?: string }) {
   return (
     <View accessibilityRole="progressbar" accessibilityLabel={label} style={{ paddingVertical: 48, alignItems: 'center', gap: 12 }}>
-      <ActivityIndicator size="large" color={colors.turnoRed} />
+      <ActivityIndicator size="large" color={colors.turnoOrange} />
       <AppText variant="bodyMd" color={colors.textMuted}>
         {label}
       </AppText>

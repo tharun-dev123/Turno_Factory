@@ -38,6 +38,6 @@ function shadow(opacity: number, radiusPx: number, offsetY: number, elevation: n
 export const shadows = {
   card: shadow(0.04, 6, 1, 1),
   raised: shadow(0.12, 16, 6, 6),
-  primary: shadow(0.3, 12, 6, 6, '#E9273B'),
+  primary: shadow(0.3, 12, 6, 6, '#FD5000'),
   dialog: shadow(0.25, 24, 12, 12),
 } as const;

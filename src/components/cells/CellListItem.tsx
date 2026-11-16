@@ -26,7 +26,7 @@ export function CellListItem({ cell, onPress }: CellListItemProps) {
           backgroundColor: colors.surface,
           borderRadius: radius.xl,
           borderWidth: 1,
-          borderColor: pressed ? 'rgba(233,39,59,0.4)' : colors.slate200,
+          borderColor: pressed ? 'rgba(253,80,0,0.4)' : colors.slate200,
           transform: [{ scale: pressed ? 0.995 : 1 }],
         },
         shadows.card,

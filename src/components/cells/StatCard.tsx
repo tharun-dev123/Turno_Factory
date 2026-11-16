@@ -41,12 +41,12 @@ export function StatCard({ label, value, caption, captionIcon, icon, accent }: S
             borderRadius: radius.lg,
             alignItems: 'center',
             justifyContent: 'center',
-            backgroundColor: accent ? colors.rose50 : colors.slate100,
+            backgroundColor: accent ? colors.orange50 : colors.slate100,
             borderWidth: 1,
-            borderColor: accent ? colors.rose100 : colors.slate200,
+            borderColor: accent ? colors.orange100 : colors.slate200,
           }}
         >
-          <Icon name={icon} size={18} color={accent ? colors.turnoRed : colors.slate700} />
+          <Icon name={icon} size={18} color={accent ? colors.turnoOrange : colors.slate700} />
         </View>
       </View>
       <View>

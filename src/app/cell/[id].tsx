@@ -87,7 +87,7 @@ export default function CellDetailsScreen() {
             {/* Summary card */}
             <Card style={{ gap: 14, borderRadius: radius.xxl }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, padding: 12, borderRadius: radius.xl, backgroundColor: colors.slate50, borderWidth: 1, borderColor: colors.slate200 }}>
-                <Icon name="battery-charging-full" size={24} color={colors.turnoRed} />
+                <Icon name="battery-charging-full" size={24} color={colors.turnoOrange} />
                 <AppText variant="monoLg" numberOfLines={1} ellipsizeMode="middle" selectable style={{ flex: 1 }}>
                   {cell.batteryBarcode}
                 </AppText>
@@ -121,7 +121,7 @@ export default function CellDetailsScreen() {
                 icon="qr-code-2"
                 label="Battery barcode"
                 below={
-                  <AppText variant="monoMd" color={colors.turnoRed} selectable>
+                  <AppText variant="monoMd" color={colors.turnoOrange} selectable>
                     {cell.batteryBarcode}
                   </AppText>
                 }

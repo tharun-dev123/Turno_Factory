@@ -41,7 +41,7 @@ export default function SplashScreenRoute() {
   const width = progress.interpolate({ inputRange: [0, 1], outputRange: ['0%', '100%'] });
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#F7F5F6', paddingTop: insets.top, paddingBottom: insets.bottom + 16 }}>
+    <View style={{ flex: 1, backgroundColor: '#F5F6F8', paddingTop: insets.top, paddingBottom: insets.bottom + 16 }}>
       <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 32, gap: 16 }}>
         <View
           style={{
@@ -51,7 +51,7 @@ export default function SplashScreenRoute() {
             backgroundColor: colors.surface,
             alignItems: 'center',
             justifyContent: 'center',
-            shadowColor: colors.turnoRed,
+            shadowColor: colors.turnoOrange,
             shadowOpacity: 0.16,
             shadowRadius: 24,
             shadowOffset: { width: 0, height: 10 },
@@ -74,7 +74,7 @@ export default function SplashScreenRoute() {
           accessibilityLabel="Starting up"
           style={{ alignSelf: 'stretch', height: 5, borderRadius: 3, backgroundColor: colors.slate200, overflow: 'hidden', marginTop: 12 }}
         >
-          <Animated.View style={{ width, height: '100%', backgroundColor: colors.turnoRed, borderRadius: 3 }} />
+          <Animated.View style={{ width, height: '100%', backgroundColor: colors.turnoOrange, borderRadius: 3 }} />
         </View>
 
         <View
@@ -90,8 +90,8 @@ export default function SplashScreenRoute() {
             borderColor: colors.slate200,
           }}
         >
-          <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: colors.turnoRed }} />
-          <AppText variant="labelMd" color={colors.turnoRed} style={{ fontSize: 11, letterSpacing: 0.8 }}>
+          <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: colors.turnoOrange }} />
+          <AppText variant="labelMd" color={colors.turnoOrange} style={{ fontSize: 11, letterSpacing: 0.8 }}>
             INIT PROTOCOL BUS • READY
           </AppText>
         </View>
@@ -111,7 +111,7 @@ export default function SplashScreenRoute() {
             borderColor: colors.slate200,
           }}
         >
-          <Icon name="sync" size={16} color={colors.turnoRed} />
+          <Icon name="sync" size={16} color={colors.turnoOrange} />
           <AppText variant="bodyMd" color={colors.slate800}>
             {appConfig.storage.name} Sync
           </AppText>

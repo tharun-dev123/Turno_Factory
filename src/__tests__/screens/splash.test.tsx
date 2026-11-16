@@ -14,7 +14,7 @@ describe('Splash screen', () => {
   it('shows the branding, then opens Login when signed out', async () => {
     await logout();
     await renderScreen(<SplashRoute />);
-    expect(screen.getByText('Turno Battery Scanner')).toBeTruthy();
+    expect(screen.getByText('Turno Factory')).toBeTruthy();
     expect(screen.getByText('INIT PROTOCOL BUS • READY')).toBeTruthy();
     await act(async () => {
       jest.advanceTimersByTime(2000);

@@ -22,7 +22,7 @@ const apiBaseUrl = resolveApiBaseUrl(process.env.EXPO_PUBLIC_API_URL, dataMode);
 const validationMode: ClientValidationMode = dataMode === 'mock' ? 'development' : 'server';
 
 export const appConfig = {
-  appName: 'Turno Battery Scanner',
+  appName: 'Turno Factory',
   tagline: 'Smart Battery Cell Registration & Management',
   footerTagline: 'Industrial Asset Management',
   version: Constants.expoConfig?.version ?? '1.0.0',

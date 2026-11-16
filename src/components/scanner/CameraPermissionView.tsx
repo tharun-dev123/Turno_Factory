@@ -24,7 +24,7 @@ export function CameraPermissionView({ status, canAskAgain, onRequest }: CameraP
       </AppText>
       <AppText variant="bodyMd" color={colors.slate300} align="center">
         {blocked
-          ? 'Camera permission is turned off. Open Settings and allow camera access for Turno Battery Scanner to scan battery codes.'
+          ? 'Camera permission is turned off. Open Settings and allow camera access for Turno Factory to scan battery codes.'
           : 'Allow camera access so the app can scan the code on each battery cell.'}
       </AppText>
       <View style={{ alignSelf: 'stretch', marginTop: 8 }}>

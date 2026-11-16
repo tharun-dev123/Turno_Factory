@@ -21,10 +21,10 @@ export interface ButtonProps {
 }
 
 const VARIANTS: Record<ButtonVariant, { bg: string; border: string; fg: string; pressed: string }> = {
-  primary: { bg: colors.turnoRed, border: colors.turnoRed, fg: '#FFFFFF', pressed: colors.turnoRedHover },
+  primary: { bg: colors.turnoOrange, border: colors.turnoOrange, fg: '#FFFFFF', pressed: colors.turnoOrangePressed },
   secondary: { bg: colors.slate100, border: colors.slate200, fg: colors.slate800, pressed: colors.slate200 },
   outline: { bg: colors.surface, border: colors.slate300, fg: colors.slate800, pressed: colors.slate50 },
-  outlineDanger: { bg: colors.surface, border: colors.rose200, fg: colors.turnoRed, pressed: colors.rose50 },
+  outlineDanger: { bg: colors.surface, border: colors.red200, fg: colors.red600, pressed: colors.red50 },
 };
 
 export function Button({
