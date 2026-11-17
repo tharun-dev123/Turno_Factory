@@ -5,7 +5,7 @@
  * in a Node vm against in-memory fakes of Google's services. This proves the two halves agree on the wire format,
  * error codes, idempotency and versioning. It does NOT prove behaviour on Google's infrastructure or on a phone.
  */
-import { AuthError, ConflictError, DuplicateBarcodeError, NotFoundError, ValidationError } from '../../errors';
+import { AuthError, ConflictError, DuplicateBarcodeError, ForbiddenError, NotFoundError, ValidationError } from '../../errors';
 import { clearSession, readSession, writeSession } from '../../sessionStore';
 import { createApiAuthBackend } from '../apiAuthBackend';
 import { createApiCellRepository } from '../apiCellRepository';
@@ -81,8 +81,14 @@ function createHarness(): Harness {
 async function signedIn(): Promise<Harness> {
   const h = createHarness();
   const result = await h.auth.login(h.backend.credentials.username, h.backend.credentials.password);
-  await writeSession({ token: result.token, username: result.username, expiresAt: result.expiresAt });
+  await writeSession({ token: result.token, username: result.username, role: result.role === 'admin' ? 'admin' : 'viewer', expiresAt: result.expiresAt });
   return h;
+}
+
+async function signedInAdminCreate(h: Harness, barcode: string) {
+  const result = await h.auth.login(h.backend.credentials.username, h.backend.credentials.password);
+  await writeSession({ token: result.token, username: result.username, role: 'admin', expiresAt: result.expiresAt });
+  await h.repo.create(newInput(barcode, `req-${barcode}`));
 }
 
 const newInput = (barcode: string, requestId?: string) => ({
@@ -121,6 +127,46 @@ describe('login', () => {
   });
 });
 
+describe('roles', () => {
+  const VIEWER = { username: 'floor.viewer', password: 'Viewer-Read-Only-77' };
+
+  async function viewerSession(h: Harness) {
+    h.backend.props.setProperty('VIEWER_USERNAME', VIEWER.username);
+    h.backend.props.setProperty('VIEWER_PASSWORD', VIEWER.password);
+    h.backend.ctx.setupViewerCredentials();
+    const result = await h.auth.login(VIEWER.username, VIEWER.password);
+    await writeSession({ token: result.token, username: result.username, role: result.role === 'admin' ? 'admin' : 'viewer', expiresAt: result.expiresAt });
+    return result;
+  }
+
+  it('login returns the role: admin for the existing account, viewer for the Viewer account', async () => {
+    const h = createHarness();
+    expect((await h.auth.login(h.backend.credentials.username, h.backend.credentials.password)).role).toBe('admin');
+    expect((await viewerSession(h)).role).toBe('viewer');
+  });
+
+  it('a Viewer can read but every write fails with ForbiddenError, is not retried, and changes nothing', async () => {
+    const h = createHarness();
+    await signedInAdminCreate(h, 'ROLE-E2E-1');
+    const [cell] = await h.repo.list();
+    await viewerSession(h);
+    h.calls.length = 0;
+
+    expect(await h.repo.list()).toHaveLength(1);
+    expect((await h.repo.getById(cell.id))?.id).toBe(cell.id);
+
+    await expect(h.repo.create(newInput('ROLE-E2E-2', 'req-viewer-create'))).rejects.toBeInstanceOf(ForbiddenError);
+    await expect(h.repo.update(cell.id, { cellWeightG: 5, expectedVersion: cell.version })).rejects.toBeInstanceOf(ForbiddenError);
+    await expect(h.repo.remove(cell.id, 'req-viewer-delete')).rejects.toBeInstanceOf(ForbiddenError);
+
+    // One attempt per write: a FORBIDDEN answer is final and must not be retried.
+    expect(h.calls.filter((c) => c.action !== 'cells.list' && c.action !== 'cells.get')).toHaveLength(3);
+    expect(await h.repo.list()).toHaveLength(1);
+    expect((await h.repo.getById(cell.id))?.version).toBe(cell.version);
+    expect(await readSession()).not.toBeNull(); // not signed out
+  });
+});
+
 describe('create / read', () => {
   it('registers a cell with only Serial Number and Battery Barcode, preserving the raw payload', async () => {
     const h = await signedIn();
@@ -143,7 +189,7 @@ describe('create / read', () => {
       dcir50Mohm: null,
       dcir90Mohm: null,
     });
-    expect(h.backend.sheets.cells.dump()[0]).toEqual(['1', 'QR-PAYLOAD-1', '', '', '', '', '', '', '', '', '']);
+    expect(h.backend.sheets.cells.dump()[0]).toEqual(['1', 'QR-PAYLOAD-1', '', '', '', '', '', '', '', '', '', 'Under Review', '']);
     expect(await h.repo.getById('1')).toEqual(cell);
     expect(await h.repo.findByBarcode('QR-PAYLOAD-1')).toEqual(cell);
     expect(await h.repo.findByBarcode('missing')).toBeNull();
@@ -246,7 +292,26 @@ describe('update and optimistic locking', () => {
       requestId: 'req-int-upd-1',
     });
     expect(updated.version).toBe(2);
-    expect(h.backend.sheets.cells.dump()[0]).toEqual(['1', 'UPD-1', 'Grade A1', 3120.4, 3.652, 0.42, 'L4-CELL-088', 50.2, 0.68, 0.65, 0.63]);
+    expect(h.backend.sheets.cells.dump()[0]).toEqual(['1', 'UPD-1', 'Grade A1', 3120.4, 3.652, 0.42, 'L4-CELL-088', 50.2, 0.68, 0.65, 0.63, 'Under Review', '']);
+  });
+
+  it('a new cell starts as Under Review and the reviewer can change it; Damaged needs remarks', async () => {
+    const h = await signedIn();
+    const created = await h.repo.create(newInput('VIS-1', 'req-int-vis-0'));
+    expect(created).toMatchObject({ visualInspectionStatus: 'Under Review', remarks: null });
+
+    await expect(
+      h.repo.update(created.id, { visualInspectionStatus: 'Damaged', remarks: null, expectedVersion: created.version, requestId: 'req-int-vis-1' }),
+    ).rejects.toMatchObject({ code: 'VALIDATION', fieldErrors: { remarks: expect.any(String) } });
+
+    const updated = await h.repo.update(created.id, {
+      visualInspectionStatus: 'Damaged',
+      remarks: 'Dent near the terminal',
+      expectedVersion: created.version,
+      requestId: 'req-int-vis-2',
+    });
+    expect(updated).toMatchObject({ visualInspectionStatus: 'Damaged', remarks: 'Dent near the terminal', version: 2 });
+    expect(h.backend.sheets.cells.dump()[0].slice(11)).toEqual(['Damaged', 'Dent near the terminal']);
   });
 
   it('rejects a stale update with a ConflictError instead of overwriting', async () => {

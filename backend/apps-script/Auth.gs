@@ -18,6 +18,27 @@ function hashPassword(password, saltHex, rounds) {
   return h;
 }
 
+/** Shared checks for a new username/password pair. The messages name the Script Properties to fix. */
+function validateNewCredentials(username, password, userProp, passProp, fnName) {
+  if (username.length < 3) {
+    throw new Error('Set Script Property ' + userProp + ' (at least 3 characters), then run ' + fnName + ' again.');
+  }
+  if (password.length < MIN_PASSWORD_LENGTH) {
+    throw new Error('Set Script Property ' + passProp + ' (at least ' + MIN_PASSWORD_LENGTH + ' characters), then run ' + fnName + ' again.');
+  }
+  if (password.toLowerCase() === username.toLowerCase()) {
+    throw new Error('The password must differ from the username.');
+  }
+  if (/^\s|\s$/.test(password)) {
+    // A pasted value often carries an invisible trailing space or line break. It would become part of the
+    // stored password and the typed password would never match, so refuse it instead.
+    throw new Error(passProp + ' starts or ends with a space or line break. Retype it in the box (do not paste), then run ' + fnName + ' again.');
+  }
+  if (/[\u0000-\u001F\u007F]/.test(password)) {
+    throw new Error(passProp + ' contains an invisible control character (for example a line break). Retype it, then run ' + fnName + ' again.');
+  }
+}
+
 /**
  * Reads the temporary properties ADMIN_USERNAME and ADMIN_PASSWORD, stores only a salted hash,
  * then deletes the plain-text properties. Also signs out every existing session.
@@ -26,23 +47,10 @@ function setupCredentials() {
   var props = PropertiesService.getScriptProperties();
   var username = String(props.getProperty(PROP.adminUsername) || '').replace(/^\s+|\s+$/g, '');
   var password = String(props.getProperty(PROP.adminPassword) || '');
-
-  if (username.length < 3) {
-    throw new Error('Set Script Property ADMIN_USERNAME (at least 3 characters), then run setupCredentials again.');
-  }
-  if (password.length < MIN_PASSWORD_LENGTH) {
-    throw new Error('Set Script Property ADMIN_PASSWORD (at least ' + MIN_PASSWORD_LENGTH + ' characters), then run setupCredentials again.');
-  }
-  if (password.toLowerCase() === username.toLowerCase()) {
-    throw new Error('The password must differ from the username.');
-  }
-  if (/^\s|\s$/.test(password)) {
-    // A pasted value often carries an invisible trailing space or line break. It would become part of the
-    // stored password and the typed password would never match, so refuse it instead.
-    throw new Error('ADMIN_PASSWORD starts or ends with a space or line break. Retype it in the box (do not paste), then run setupCredentials again.');
-  }
-  if (/[\u0000-\u001F\u007F]/.test(password)) {
-    throw new Error('ADMIN_PASSWORD contains an invisible control character (for example a line break). Retype it, then run setupCredentials again.');
+  validateNewCredentials(username, password, 'ADMIN_USERNAME', 'ADMIN_PASSWORD', 'setupCredentials');
+  var viewerName = getProp(PROP.viewerAuthUsername);
+  if (viewerName && usernamesMatch(username, viewerName)) {
+    throw new Error('The Admin username must differ from the Viewer username.');
   }
 
   var salt = randomHex(16);
@@ -58,6 +66,39 @@ function setupCredentials() {
   console.log(
     'Credentials stored (hashed). Username: "' + username + '" (not case-sensitive). Password length: ' + password.length +
       ' characters. Temporary ADMIN_* properties were deleted. All sessions were signed out.',
+  );
+}
+
+/**
+ * Reads the temporary properties VIEWER_USERNAME and VIEWER_PASSWORD, stores only a salted hash, then deletes
+ * the plain-text properties. The Viewer account can read every record but can never create, edit or delete.
+ * Existing sessions stay signed in (the token epoch is not changed).
+ */
+function setupViewerCredentials() {
+  var props = PropertiesService.getScriptProperties();
+  var username = String(props.getProperty(PROP.viewerUsername) || '').replace(/^\s+|\s+$/g, '');
+  var password = String(props.getProperty(PROP.viewerPassword) || '');
+  validateNewCredentials(username, password, 'VIEWER_USERNAME', 'VIEWER_PASSWORD', 'setupViewerCredentials');
+  var adminName = getProp(PROP.authUsername);
+  if (!adminName) {
+    throw new Error('Run setupCredentials (Admin account) before setupViewerCredentials.');
+  }
+  if (usernamesMatch(username, adminName)) {
+    throw new Error('The Viewer username must differ from the Admin username.');
+  }
+
+  var salt = randomHex(16);
+  var record = ['v1', PASSWORD_HASH_ROUNDS, salt, hashPassword(password, salt, PASSWORD_HASH_ROUNDS)].join('$');
+  var values = {};
+  values[PROP.viewerAuthUsername] = username;
+  values[PROP.viewerAuthPasswordRecord] = record;
+  props.setProperties(values);
+  props.deleteProperty(PROP.viewerPassword);
+  props.deleteProperty(PROP.viewerUsername);
+  props.deleteProperty(PROP.viewerLoginState);
+  console.log(
+    'Viewer credentials stored (hashed). Username: "' + username + '" (not case-sensitive). Password length: ' + password.length +
+      ' characters. Temporary VIEWER_* properties were deleted.',
   );
 }
 
@@ -193,16 +234,20 @@ function rotateTokenSecret() {
 }
 
 function clearLoginLockout() {
-  PropertiesService.getScriptProperties().deleteProperty(PROP.loginState);
-  console.log('Login lockout cleared.');
+  var props = PropertiesService.getScriptProperties();
+  props.deleteProperty(PROP.loginState);
+  props.deleteProperty(PROP.viewerLoginState);
+  props.deleteProperty(PROP.otherLoginState);
+  console.log('Login lockout cleared (Admin, Viewer and unrecognised usernames).');
 }
 
 // ---------------------------------------------------------------------------------------------
-// Lockout (global: there is a single shared account and no reliable client address)
+// Lockout (per username: Admin, Viewer, and one shared bucket for every unrecognised username, so failed
+// attempts against one account can never lock out another. There is no reliable client address.)
 // ---------------------------------------------------------------------------------------------
 
-function readLoginState() {
-  var raw = getProp(PROP.loginState);
+function readLoginState(stateProp) {
+  var raw = getProp(stateProp || PROP.loginState);
   if (!raw) return { fails: 0, windowStart: 0, lockedUntil: 0 };
   try {
     var parsed = JSON.parse(raw);
@@ -216,8 +261,8 @@ function readLoginState() {
   }
 }
 
-function writeLoginState(state) {
-  PropertiesService.getScriptProperties().setProperty(PROP.loginState, JSON.stringify(state));
+function writeLoginState(state, stateProp) {
+  PropertiesService.getScriptProperties().setProperty(stateProp || PROP.loginState, JSON.stringify(state));
 }
 
 function assertNotLockedOut(state) {
@@ -230,7 +275,7 @@ function assertNotLockedOut(state) {
   }
 }
 
-function recordFailedLogin(state) {
+function recordFailedLogin(state, stateProp) {
   var now = nowMs();
   var maxFails = getIntProp(PROP.maxFailedLogins, 5);
   var lockoutMs = getIntProp(PROP.lockoutMinutes, 15) * 60 * 1000;
@@ -242,7 +287,7 @@ function recordFailedLogin(state) {
     next.fails = 0;
     next.windowStart = 0;
   }
-  writeLoginState(next);
+  writeLoginState(next, stateProp);
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -262,45 +307,56 @@ function handleLogin(payload) {
   if (!storedUsername || !record) {
     fail('INTERNAL', 'The backend is not configured: run setupCredentials().', {});
   }
+  var viewerUsername = getProp(PROP.viewerAuthUsername);
+  var viewerRecord = getProp(PROP.viewerAuthPasswordRecord);
+  var viewerConfigured = !!(viewerUsername && viewerRecord);
 
   return withScriptLock(function () {
-    var state = readLoginState();
+    // Decide which account the typed username refers to. Lockout is tracked per account.
+    var adminUserOk = usernamesMatch(payload.username, storedUsername);
+    var viewerUserOk = viewerConfigured && usernamesMatch(payload.username, viewerUsername);
+    var role = adminUserOk ? ROLE_ADMIN : viewerUserOk ? ROLE_VIEWER : null;
+    var stateProp = role === ROLE_ADMIN ? PROP.loginState : role === ROLE_VIEWER ? PROP.viewerLoginState : PROP.otherLoginState;
+    var state = readLoginState(stateProp);
     assertNotLockedOut(state);
 
-    // Always evaluate both checks so timing does not reveal which one failed.
-    var usernameOk = usernamesMatch(payload.username, storedUsername);
-    // Stored passwords can never start or end with whitespace (setupCredentials refuses that), so leading and
+    // Always verify a password so timing does not reveal which check failed (Admin record when no account matched).
+    var recordToCheck = role === ROLE_VIEWER ? viewerRecord : record;
+    // Stored passwords can never start or end with whitespace (setup refuses that), so leading and
     // trailing whitespace on a login attempt is ignored. It usually comes from pasting a password on a phone
     // together with a line break or spaces. Whitespace INSIDE the password is still significant.
     var trimmedPassword = payload.password.replace(/^\s+|\s+$/g, '');
     var passwordOk =
-      verifyPasswordRecord(payload.password, record) ||
-      (trimmedPassword !== payload.password && trimmedPassword.length > 0 && verifyPasswordRecord(trimmedPassword, record));
+      verifyPasswordRecord(payload.password, recordToCheck) ||
+      (trimmedPassword !== payload.password && trimmedPassword.length > 0 && verifyPasswordRecord(trimmedPassword, recordToCheck));
+    var usernameOk = role !== null;
 
     if (!usernameOk || !passwordOk) {
       logRejectedLogin(payload, storedUsername, usernameOk, passwordOk);
-      recordFailedLogin(state);
-      var after = readLoginState();
+      recordFailedLogin(state, stateProp);
+      var after = readLoginState(stateProp);
       if (after.lockedUntil > nowMs()) assertNotLockedOut(after);
       fail('AUTH', 'Invalid username or password.', { reason: 'INVALID_CREDENTIALS' });
     }
 
-    if (state.fails > 0 || state.lockedUntil > 0) PropertiesService.getScriptProperties().deleteProperty(PROP.loginState);
-    return issueToken(storedUsername);
+    if (state.fails > 0 || state.lockedUntil > 0) PropertiesService.getScriptProperties().deleteProperty(stateProp);
+    return issueToken(role === ROLE_VIEWER ? viewerUsername : storedUsername, role);
   });
 }
 
-function issueToken(username) {
+/** `role` defaults to Viewer (fail closed): only an explicit ROLE_ADMIN grants write access. */
+function issueToken(username, role) {
+  role = role === ROLE_ADMIN ? ROLE_ADMIN : ROLE_VIEWER;
   var secret = getProp(PROP.tokenSecret);
   if (!secret) fail('INTERNAL', 'The backend is not configured: run initializeBackend().', {});
   var issuedAt = nowMs();
   var expiresAt = issuedAt + getIntProp(PROP.sessionHours, 12) * 3600 * 1000;
-  var body = b64urlEncode(JSON.stringify({ u: username, iat: issuedAt, exp: expiresAt, ep: getTokenEpoch() }));
+  var body = b64urlEncode(JSON.stringify({ u: username, r: role, iat: issuedAt, exp: expiresAt, ep: getTokenEpoch() }));
   var token = body + '.' + hmacSha256B64Url(body, secret);
-  return { token: token, expiresAt: isoFromMs(expiresAt), username: username };
+  return { token: token, expiresAt: isoFromMs(expiresAt), username: username, role: role };
 }
 
-/** Throws an AUTH error unless the token is valid, unexpired and from the current epoch. */
+/** Throws an AUTH error unless the token is valid, unexpired and from the current epoch. Returns the claims plus `role`. */
 function requireAuth(token) {
   var secret = getProp(PROP.tokenSecret);
   if (!secret) fail('INTERNAL', 'The backend is not configured: run initializeBackend().', {});
@@ -326,5 +382,7 @@ function requireAuth(token) {
   if (typeof claims.exp !== 'number' || claims.exp <= nowMs()) {
     fail('AUTH', 'Your session has expired. Please sign in again.', { reason: 'TOKEN_EXPIRED' });
   }
+  // Fail closed: a token without a valid role claim (for example one issued before roles existed) is a Viewer.
+  claims.role = claims.r === ROLE_ADMIN ? ROLE_ADMIN : ROLE_VIEWER;
   return claims;
 }

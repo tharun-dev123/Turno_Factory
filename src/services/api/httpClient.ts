@@ -3,6 +3,7 @@ import {
   BusyError,
   ConflictError,
   DuplicateBarcodeError,
+  ForbiddenError,
   InternalError,
   NetworkError,
   NotFoundError,
@@ -88,6 +89,8 @@ export function mapApiError(error: ApiErrorBody): ServiceError {
       return new NotFoundError(error.message);
     case 'AUTH':
       return new AuthError(error.message, asString(details.reason));
+    case 'FORBIDDEN':
+      return new ForbiddenError(error.message || undefined);
     case 'CONFLICT':
       return new ConflictError(error.message);
     case 'BUSY':

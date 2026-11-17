@@ -36,7 +36,7 @@ describe('cellService (mock data source)', () => {
       expect(cells.some((c) => c.cellWeightG !== null && c.dcir90Mohm !== null)).toBe(true);
       expect(cells.some((c) => c.cellWeightG === null && c.sortingGrade === null)).toBe(true);
       expect(new Set(cells.map((c) => c.qcStatus)).size).toBeGreaterThan(1);
-      expect(new Set(cells.map((c) => c.inspectionStatus)).size).toBeGreaterThan(1);
+      expect(new Set(cells.map((c) => c.visualInspectionStatus)).size).toBeGreaterThan(1);
     });
 
     it('gets a cell by id and throws NotFoundError for unknown ids', async () => {

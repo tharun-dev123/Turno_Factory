@@ -1,6 +1,7 @@
 import { Pressable, View } from 'react-native';
 import type { BottomTabBarProps } from 'expo-router/js-tabs';
 
+import { useAuth } from '@/context/AuthContext';
 import { colors, TAB_BAR_HEIGHT } from '@/theme';
 
 import { AppText } from './AppText';
@@ -16,6 +17,8 @@ const INACTIVE = colors.textMuted;
 
 /** Bottom navigation: All Cells | Scan (elevated) | Settings, as in the Stitch design. */
 export function AppTabBar({ state, emitter, navigateToTab, insets }: BottomTabBarProps) {
+  // Scanning registers new cells (a write), so it is hidden for read-only accounts.
+  const { canWrite } = useAuth();
 
   return (
     <View
@@ -34,6 +37,7 @@ export function AppTabBar({ state, emitter, navigateToTab, insets }: BottomTabBa
       {state.routes.map((route, index) => {
         const meta = ICONS[route.name];
         if (!meta) return null;
+        if (route.name === 'scan' && !canWrite) return null;
         const focused = state.index === index;
 
         const onPress = () => {

@@ -2,6 +2,7 @@ import {
   AuthError,
   BusyError,
   ConflictError,
+  ForbiddenError,
   DuplicateBarcodeError,
   InternalError,
   NetworkError,
@@ -46,7 +47,7 @@ function setup(fetchImpl: jest.Mock, overrides: Partial<ApiClientConfig> = {}) {
 }
 
 async function signIn(token = 'token-123') {
-  await writeSession({ token, username: 'u', expiresAt: new Date(Date.now() + 3_600_000).toISOString() });
+  await writeSession({ token, username: 'u', role: 'admin', expiresAt: new Date(Date.now() + 3_600_000).toISOString() });
 }
 
 beforeEach(async () => {
@@ -89,6 +90,7 @@ describe('error mapping (the JSON ok flag and code, never the HTTP status)', () 
     ['VALIDATION', ValidationError, { fieldErrors: { cellWeightG: 'Must be a number.' } }],
     ['NOT_FOUND', NotFoundError, {}],
     ['AUTH', AuthError, { reason: 'INVALID_CREDENTIALS' }],
+    ['FORBIDDEN', ForbiddenError, { reason: 'READ_ONLY' }],
     ['CONFLICT', ConflictError, {}],
     ['BUSY', BusyError, {}],
     ['INTERNAL', InternalError, { recovery: 'ROLLED_BACK' }],

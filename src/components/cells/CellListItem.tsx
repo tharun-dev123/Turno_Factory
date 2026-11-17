@@ -1,5 +1,6 @@
 import { Pressable, View } from 'react-native';
 
+import { VisualStatusPill } from '@/components/cells/VisualStatusPill';
 import { AppText } from '@/components/ui/AppText';
 import { Icon } from '@/components/ui/Icon';
 import type { CellRecord } from '@/models/cell';
@@ -15,7 +16,7 @@ export function CellListItem({ cell, onPress }: CellListItemProps) {
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={`Serial ${formatSerial(cell.serialNumber)}, barcode ${cell.batteryBarcode}`}
+      accessibilityLabel={`Serial ${formatSerial(cell.serialNumber)}, barcode ${cell.batteryBarcode}, ${cell.visualInspectionStatus}`}
       onPress={() => onPress(cell)}
       style={({ pressed }) => [
         {
@@ -47,10 +48,12 @@ export function CellListItem({ cell, onPress }: CellListItemProps) {
         <Icon name="battery-std" size={22} color={colors.slate700} />
       </View>
 
-      <View style={{ flex: 1 }}>
-        <AppText variant="monoMd" color={colors.slate700} numberOfLines={1} style={{ fontSize: 12.5 }}>
+      {/* Barcode with the status pill under it. Together they fit inside the 40px icon height, so the card keeps its size. */}
+      <View style={{ flex: 1, gap: 2, justifyContent: 'center' }}>
+        <AppText variant="monoMd" color={colors.slate700} numberOfLines={1} style={{ fontSize: 12.5, lineHeight: 16 }}>
           {cell.batteryBarcode}
         </AppText>
+        <VisualStatusPill status={cell.visualInspectionStatus} size="sm" />
       </View>
 
       <Icon name="chevron-right" size={22} color={colors.slate300} />

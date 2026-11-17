@@ -1,7 +1,13 @@
-import type { CellRecord, CreateCellInput, UpdateCellInput } from '@/models/cell';
+import {
+  DEFAULT_VISUAL_STATUS,
+  REMARKS_REQUIRED_STATUSES,
+  type CellRecord,
+  type CreateCellInput,
+  type UpdateCellInput,
+} from '@/models/cell';
 
 import type { CellRepository } from '../contracts';
-import { ConflictError, DuplicateBarcodeError, NotFoundError } from '../errors';
+import { ConflictError, DuplicateBarcodeError, NotFoundError, ValidationError } from '../errors';
 import { buildDummyCells } from './dummyCells';
 import { mockDelay, mockSeedMode } from './mockConfig';
 import { readCells, readSerialCounter, writeCells, writeSerialCounter } from './mockStorage';
@@ -21,8 +27,17 @@ let lock: Promise<unknown> = Promise.resolve();
 async function load(): Promise<void> {
   const stored = await readCells<CellRecord>();
   if (stored) {
-    // Records saved before versioning existed get version 1.
-    cache = stored.map((cell) => ({ ...cell, version: cell.version ?? 1 }));
+    // Records saved before versioning existed get version 1; records saved before visual inspection existed
+    // start as Under Review.
+    cache = stored.map((cell) => {
+      const { inspectionStatus: _legacy, ...rest } = cell as CellRecord & { inspectionStatus?: unknown };
+      return {
+        ...rest,
+        version: cell.version ?? 1,
+        visualInspectionStatus: cell.visualInspectionStatus ?? DEFAULT_VISUAL_STATUS,
+        remarks: cell.remarks ?? null,
+      };
+    });
     const storedCounter = await readSerialCounter();
     const maxSerial = stored.reduce((max, cell) => Math.max(max, cell.serialNumber), 0);
     serialCounter = Math.max(storedCounter ?? 0, maxSerial);
@@ -114,9 +129,10 @@ export const mockCellRepository: CellRepository = {
         createdAt: now,
         updatedAt: now,
         syncStatus: 'synced',
-        // Display-only statuses: new cells start unassessed.
+        // Display-only status: new cells start unassessed. Visual inspection always starts as Under Review.
         qcStatus: 'pending',
-        inspectionStatus: 'not_started',
+        visualInspectionStatus: DEFAULT_VISUAL_STATUS,
+        remarks: null,
         version: 1,
       };
       cells.push(record);
@@ -152,6 +168,11 @@ export const mockCellRepository: CellRepository = {
         updatedAt: new Date().toISOString(),
         version: current.version + 1,
       };
+      // Same rule as the backend, applied to the resulting record.
+      if (REMARKS_REQUIRED_STATUSES.includes(updated.visualInspectionStatus) && (updated.remarks ?? '').trim() === '') {
+        const message = `Remarks are required when the status is ${updated.visualInspectionStatus}.`;
+        throw new ValidationError(message, { remarks: message });
+      }
       cells[index] = updated;
       await persist();
       return { ...updated };

@@ -5,6 +5,7 @@ export type ServiceErrorCode =
   | 'VALIDATION'
   | 'NOT_FOUND'
   | 'AUTH'
+  | 'FORBIDDEN'
   | 'CONFLICT'
   | 'BUSY'
   | 'INTERNAL'
@@ -55,6 +56,13 @@ export class AuthError extends ServiceError {
   constructor(message = 'Invalid username or password.', reason: string | null = null) {
     super('AUTH', message);
     this.reason = reason;
+  }
+}
+
+/** The signed-in account is read-only (Viewer) and tried to change data. Nothing was changed. */
+export class ForbiddenError extends ServiceError {
+  constructor(message = 'Your account has read-only access and cannot make changes.') {
+    super('FORBIDDEN', message);
   }
 }
 

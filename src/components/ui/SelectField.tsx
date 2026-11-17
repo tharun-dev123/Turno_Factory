@@ -13,10 +13,12 @@ export interface SelectFieldProps {
   placeholder?: string;
   error?: string | null;
   onChange: (value: string | null) => void;
+  /** Show a "Not set" option that clears the value. Turn off for fields that must always have a value. */
+  allowClear?: boolean;
 }
 
 /** Dropdown-style picker that opens a bottom list. A "Not set" option clears the value. */
-export function SelectField({ label, value, options, placeholder = 'Select...', error, onChange }: SelectFieldProps) {
+export function SelectField({ label, value, options, placeholder = 'Select...', error, onChange, allowClear = true }: SelectFieldProps) {
   const [open, setOpen] = useState(false);
   // Keep a stored value selectable even if it is not in the configured option list.
   const list = value && !options.includes(value) ? [value, ...options] : options;
@@ -64,7 +66,7 @@ export function SelectField({ label, value, options, placeholder = 'Select...', 
               {label}
             </AppText>
             <FlatList
-              data={[null, ...list]}
+              data={allowClear ? [null, ...list] : [...list]}
               keyExtractor={(item) => item ?? '__none__'}
               renderItem={({ item }) => {
                 const selected = item === value;

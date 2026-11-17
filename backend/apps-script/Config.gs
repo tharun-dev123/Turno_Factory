@@ -11,7 +11,7 @@ var API_VERSION = '1.0.0';
 
 var SHEET_NAMES = { cells: 'BatteryCells', meta: 'CellMeta', audit: 'AuditLog' };
 
-/** BatteryCells: exact 11-column order (A..K). Do not reorder. */
+/** BatteryCells: exact 13-column order (A..M). Do not reorder. */
 var CELL_HEADERS = [
   'Serial Number', // A
   'Battery Barcode', // B
@@ -24,6 +24,8 @@ var CELL_HEADERS = [
   'DCIR @20%', // I
   'DCIR @50%', // J
   'DCIR @90%', // K
+  'Visual Inspection Status', // L
+  'Remarks', // M
 ];
 
 var META_HEADERS = [
@@ -55,6 +57,8 @@ var COL = {
   dcir20: 8,
   dcir50: 9,
   dcir90: 10,
+  visualStatus: 11,
+  remarks: 12,
 };
 
 var META_COL = {
@@ -89,12 +93,19 @@ var NUMERIC_FIELDS = [
 ];
 
 /** Columns of BatteryCells that must be plain text (identifiers). */
-var CELL_TEXT_COLUMNS = [COL.serial, COL.barcode, COL.sorting, COL.localNumber];
+var CELL_TEXT_COLUMNS = [COL.serial, COL.barcode, COL.sorting, COL.localNumber, COL.visualStatus, COL.remarks];
+
+/** Visual Inspection: the only allowed statuses. Every cell has exactly one; new cells start as Under Review. */
+var VISUAL_STATUSES = ['Good', 'Damaged', 'Under Review', 'Rejected'];
+var DEFAULT_VISUAL_STATUS = 'Under Review';
+/** A reviewer must explain these two statuses in Remarks. */
+var REMARKS_REQUIRED_STATUSES = ['Damaged', 'Rejected'];
 
 var LIMITS = {
   /** Safety bound only. It is NOT a barcode length rule (the real format is still unconfirmed). */
   maxPayloadLength: 512,
   maxTextFieldLength: 64,
+  maxRemarksLength: 500,
   maxIdLength: 32,
   maxRequestBodyChars: 20000,
   lockWaitMs: 12000,
@@ -108,6 +119,8 @@ var PROP = {
   validationMode: 'VALIDATION_MODE', // 'pilot' enables pilot mode; anything else = strict production (rules pending)
   adminUsername: 'ADMIN_USERNAME', // temporary, deleted by setupCredentials()
   adminPassword: 'ADMIN_PASSWORD', // temporary, deleted by setupCredentials()
+  viewerUsername: 'VIEWER_USERNAME', // temporary, deleted by setupViewerCredentials()
+  viewerPassword: 'VIEWER_PASSWORD', // temporary, deleted by setupViewerCredentials()
   checkUsername: 'CHECK_USERNAME', // temporary, read and deleted by checkCredentials()
   checkPassword: 'CHECK_PASSWORD', // temporary, read and deleted by checkCredentials()
   sessionHours: 'SESSION_HOURS', // optional, default 12
@@ -120,9 +133,17 @@ var PROP = {
   tokenSecret: 'TOKEN_SECRET',
   tokenEpoch: 'TOKEN_EPOCH',
   serialCounter: 'SERIAL_COUNTER',
-  loginState: 'LOGIN_STATE',
+  loginState: 'LOGIN_STATE', // lockout state of the Admin username (name kept for backward compatibility)
+  viewerAuthUsername: 'VIEWER_AUTH_USERNAME',
+  viewerAuthPasswordRecord: 'VIEWER_AUTH_PASSWORD_RECORD',
+  viewerLoginState: 'VIEWER_LOGIN_STATE', // lockout state of the Viewer username
+  otherLoginState: 'OTHER_LOGIN_STATE', // lockout state shared by all unrecognised usernames
   journal: 'JOURNAL',
 };
+
+/** Roles carried in the signed token. The shared account that existed before roles is the Admin. */
+var ROLE_ADMIN = 'admin';
+var ROLE_VIEWER = 'viewer';
 
 var PASSWORD_HASH_ROUNDS = 1000;
 var MIN_PASSWORD_LENGTH = 12;

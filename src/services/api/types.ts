@@ -27,6 +27,9 @@ export interface ApiCell {
   dcir20Mohm: number | null;
   dcir50Mohm: number | null;
   dcir90Mohm: number | null;
+  /** 'Good' | 'Damaged' | 'Under Review' | 'Rejected' */
+  visualInspectionStatus: string;
+  remarks: string | null;
   stationId: string | null;
   lineId: string | null;
   scannedAt: string;

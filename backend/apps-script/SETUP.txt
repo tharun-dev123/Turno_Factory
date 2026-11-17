@@ -23,8 +23,11 @@ FILES (paste each into the Apps Script editor, in this folder: backend/apps-scri
 
 3. PREPARE THE SPREADSHEET
    - Spreadsheet "Turno_Factory_Demo" must contain the tab "BatteryCells" (empty, or already with the exact
-     11 headers in order: Serial Number | Battery Barcode | Sorting | Cell Weight | Cell Voltage | ACIR |
-     Cell Local Number | 0.5C DCh capacities | DCIR @20% | DCIR @50% | DCIR @90%).
+     13 headers in order: Serial Number | Battery Barcode | Sorting | Cell Weight | Cell Voltage | ACIR |
+     Cell Local Number | 0.5C DCh capacities | DCIR @20% | DCIR @50% | DCIR @90% |
+     Visual Inspection Status | Remarks).
+     An EXISTING sheet that still has only the first 11 headers must be upgraded first: see
+     "UPGRADING AN EXISTING SHEET (Visual Inspection)" below.
    - The script creates "CellMeta" and "AuditLog" itself. It NEVER overwrites a different existing layout:
      if the headers differ, initializeBackend stops with a message naming the sheet and column.
    - Do not share the spreadsheet publicly. Only the owning account (and admins) need access.
@@ -61,6 +64,25 @@ FILES (paste each into the Apps Script editor, in this folder: backend/apps-scri
      AUTH_USERNAME and AUTH_PASSWORD_RECORD exist (the record is a salted hash, not the password).
    - Run  showStatus  and check: spreadsheetIdSet true, credentialsConfigured true, tokenSecretSet true.
 
+6B. VIEWER ACCOUNT (optional, read-only)
+   Two roles exist. The account from step 6 is the ADMIN: it can view, add, edit and delete records.
+   A VIEWER can see every record but can never add, edit, delete or change a status. The backend enforces
+   this on every request (a Viewer who calls a write action gets error code FORBIDDEN), whatever the app shows.
+   - Project Settings -> Script Properties -> add (TEMPORARY, deleted by the next step):
+       VIEWER_USERNAME   3+ characters, different from the Admin username (not case-sensitive)
+       VIEWER_PASSWORD   12+ characters, different from the username and from the Admin password
+     Type the password in the box (do not paste) so no invisible line break comes along.
+   - Select the function  setupViewerCredentials  and click Run.
+   - Confirm VIEWER_USERNAME and VIEWER_PASSWORD are GONE and VIEWER_AUTH_USERNAME and
+     VIEWER_AUTH_PASSWORD_RECORD exist (a salted hash). Run setupCredentials first if you have not.
+   - To change the Viewer password later, repeat this step. Existing Viewer sessions stay valid until they
+     expire (SESSION_HOURS); run signOutEveryone if you need them ended at once (this also signs out Admin).
+   - Failed-login lockout is tracked per username: failed Viewer attempts never lock out Admin, and the other
+     way round. Usernames that match neither account share one separate counter. clearLoginLockout resets all.
+   - UPGRADING an existing deployment: sessions issued before roles existed carry no role and are treated as
+     Viewer (read-only). Admin users must sign out and sign in again to regain write access. Nothing else
+     changes, and no global sign-out is needed.
+
 7. DEPLOY THE WEB APP
    - Deploy -> New deployment -> type "Web app".
        Description:    Turno API v1
@@ -79,6 +101,7 @@ FILES (paste each into the Apps Script editor, in this folder: backend/apps-scri
        -d '{"action":"health"}' "<WEB_APP_URL>"
    Expected: {"ok":true,"data":{"status":"ok","apiVersion":"1.0.0",...,"validationMode":"pilot","schema":"ok"}}
    A wrong login must return {"ok":false,"error":{"code":"AUTH",...}}.
+   A successful login returns "role":"admin" or "role":"viewer" next to the token.
    (-L is required: Apps Script answers with a redirect.)
    Do NOT put the real password into shell history on a shared machine.
 
@@ -91,11 +114,27 @@ UPDATING THE CODE LATER
      Version: New version -> Deploy. The URL stays the same, so installed apps keep working.
    - "New deployment" creates a DIFFERENT URL and would require rebuilding the app.
 
+UPGRADING AN EXISTING SHEET (Visual Inspection)
+   Needed once, for a spreadsheet that was set up before the "Visual Inspection Status" (column L) and
+   "Remarks" (column M) columns existed. Until it is done, every request fails with a message saying column 12
+   of "BatteryCells" should be "Visual Inspection Status".
+   - Make a copy of the spreadsheet first (File -> Make a copy).
+   - Paste the updated .gs files into the Apps Script project, then Save.
+   - Select the function  migrateVisualInspection  and click Run.
+   - It adds the two headers, sets every existing cell to "Under Review", and adds a dropdown to column L
+     (Good, Damaged, Under Review, Rejected). It is safe to run again: it never overwrites a status that is
+     already set, and it stops without changes if columns L or M already contain other data.
+   - Deploy -> Manage deployments -> edit the existing deployment -> New version (keeps the same URL).
+   Rules enforced by the backend: only an Admin account can change the status or remarks (a Viewer gets
+   FORBIDDEN), new cells always start as "Under Review", and "Damaged" or "Rejected" needs Remarks
+   (up to 500 characters). Remarks are kept if the status later changes; clear them by sending empty Remarks.
+
 ADMINISTRATOR FUNCTIONS (select in the editor, then Run)
    showStatus          Non-secret configuration summary in the log.
    signOutEveryone     Invalidates every phone's session immediately.
    rotateTokenSecret   New signing secret (also signs everyone out).
    clearLoginLockout   Lifts a lockout (any 5 failed logins lock sign-in for 15 minutes, for everyone).
+   migrateVisualInspection  One-time upgrade of an existing 11-column BatteryCells sheet (see above).
    repairIntegrity     Completes/rolls back an interrupted write and repairs BatteryCells <-> CellMeta mismatches.
    setupCredentials    Change the shared password: set ADMIN_USERNAME and ADMIN_PASSWORD again, run it
                        (this signs everyone out and deletes the temporary properties). TYPE the password into

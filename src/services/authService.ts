@@ -1,6 +1,7 @@
+import { clearCellCache } from './cellService';
 import { ValidationError } from './errors';
 import { authBackend } from './repository';
-import { clearSession, readSession, writeSession, type Session } from './sessionStore';
+import { clearSession, normalizeRole, readSession, writeSession, type Session } from './sessionStore';
 
 /**
  * Auth service: the ONLY way screens read or change the signed-in session.
@@ -31,12 +32,13 @@ export async function login(username: string, password: string): Promise<Session
     });
   }
   const result = await authBackend.login(user, pass);
-  const session: Session = { token: result.token, username: result.username, expiresAt: result.expiresAt };
+  const session: Session = { token: result.token, username: result.username, role: normalizeRole(result.role), expiresAt: result.expiresAt };
   await writeSession(session);
   return session;
 }
 
 export async function logout(): Promise<void> {
+  clearCellCache();
   await clearSession();
 }
 

@@ -1,4 +1,10 @@
-import type { EditableCellFields, EditableFieldKey } from '@/models/cell';
+import {
+  MAX_REMARKS_LENGTH,
+  REMARKS_REQUIRED_STATUSES,
+  VISUAL_INSPECTION_STATUSES,
+  type EditableCellFields,
+  type EditableFieldKey,
+} from '@/models/cell';
 
 /**
  * Field-level validation for the Edit Cell form.
@@ -30,6 +36,8 @@ export const FIELD_LABELS: Record<EditableFieldKey, string> = {
   dcir20Mohm: 'DCIR @20%',
   dcir50Mohm: 'DCIR @50%',
   dcir90Mohm: 'DCIR @90%',
+  visualInspectionStatus: 'Visual inspection status',
+  remarks: 'Remarks',
 };
 
 /** Parse a form string to a number. Empty string -> null. Invalid -> NaN. */
@@ -64,6 +72,24 @@ export function validateEditableFields(input: Partial<EditableCellFields>): Reco
     if (typeof value !== 'string' || value.length > MAX_TEXT_LENGTH) {
       errors[key] = `${FIELD_LABELS[key]} must be at most ${MAX_TEXT_LENGTH} characters.`;
     }
+  }
+
+  const status = input.visualInspectionStatus;
+  if (status !== undefined && !VISUAL_INSPECTION_STATUSES.includes(status)) {
+    errors.visualInspectionStatus = `${FIELD_LABELS.visualInspectionStatus} must be one of: ${VISUAL_INSPECTION_STATUSES.join(', ')}.`;
+  }
+
+  const remarks = input.remarks;
+  if (remarks !== undefined && remarks !== null) {
+    if (typeof remarks !== 'string' || remarks.length > MAX_REMARKS_LENGTH) {
+      errors.remarks = `${FIELD_LABELS.remarks} must be at most ${MAX_REMARKS_LENGTH} characters.`;
+    }
+  }
+
+  // Both fields given together: the explanation is mandatory for Damaged and Rejected.
+  if (status !== undefined && !errors.visualInspectionStatus && REMARKS_REQUIRED_STATUSES.includes(status)) {
+    const text = typeof remarks === 'string' ? remarks.trim() : '';
+    if (remarks !== undefined && text === '' && !errors.remarks) errors.remarks = `${FIELD_LABELS.remarks} are required when the status is ${status}.`;
   }
 
   return errors;

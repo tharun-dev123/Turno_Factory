@@ -2,6 +2,7 @@ import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
 
 import ScanScreen from '@/app/(tabs)/scan';
 
+import { login, logout } from '@/services/authService';
 import { renderScreen, testGlobals } from '@/testUtils/renderScreen';
 
 /** Simulate the camera decoding a code. */
@@ -24,7 +25,18 @@ async function afterCooldown(fn: () => Promise<void>) {
 }
 
 describe('Scan screen', () => {
-  beforeEach(() => jest.clearAllMocks());
+  beforeEach(async () => {
+    jest.clearAllMocks();
+    await login('Admin', 'admin@123');
+  });
+
+  it('shows a read-only notice instead of the camera for a Viewer', async () => {
+    await logout();
+    await login('Viewer', 'viewer@123');
+    await renderScreen(<ScanScreen />);
+    expect(await screen.findByText('Read-only access')).toBeTruthy();
+    expect(screen.queryByTestId('camera')).toBeNull();
+  });
 
   it('shows the camera and the manual entry button', async () => {
     await renderScreen(<ScanScreen />);

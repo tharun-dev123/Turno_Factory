@@ -10,7 +10,15 @@ export type SyncStatus = 'synced' | 'pending' | 'error';
 
 /** Display-only statuses (not editable; the factory has not defined this workflow yet). */
 export type QcStatus = 'passed' | 'failed' | 'pending';
-export type InspectionStatus = 'complete' | 'in_progress' | 'not_started';
+
+/** Visual inspection result. Every cell has exactly one. Only an Admin (the reviewer) can change it. */
+export const VISUAL_INSPECTION_STATUSES = ['Good', 'Damaged', 'Under Review', 'Rejected'] as const;
+export type VisualInspectionStatus = (typeof VISUAL_INSPECTION_STATUSES)[number];
+/** New cells start here. */
+export const DEFAULT_VISUAL_STATUS: VisualInspectionStatus = 'Under Review';
+/** These statuses need an explanation in Remarks. */
+export const REMARKS_REQUIRED_STATUSES: readonly VisualInspectionStatus[] = ['Damaged', 'Rejected'];
+export const MAX_REMARKS_LENGTH = 500;
 
 /** Fields the operator may edit on an existing cell (Edit Cell screen). */
 export interface EditableCellFields {
@@ -32,6 +40,10 @@ export interface EditableCellFields {
   dcir50Mohm: number | null;
   /** Milliohms @ 90% SOC */
   dcir90Mohm: number | null;
+  /** Visual inspection result (never null: new cells are `Under Review`) */
+  visualInspectionStatus: VisualInspectionStatus;
+  /** Reviewer's note. Required when the status is Damaged or Rejected */
+  remarks: string | null;
 }
 
 export interface CellRecord extends EditableCellFields {
@@ -53,7 +65,6 @@ export interface CellRecord extends EditableCellFields {
   updatedAt: string;
   syncStatus: SyncStatus;
   qcStatus: QcStatus;
-  inspectionStatus: InspectionStatus;
   /** Optimistic-locking version; incremented by the data source on every update */
   version: number;
 }

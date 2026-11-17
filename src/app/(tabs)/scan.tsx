@@ -3,6 +3,8 @@ import { useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
+import { useAuth } from '@/context/AuthContext';
+
 import { CameraPermissionView } from '@/components/scanner/CameraPermissionView';
 import { ManualEntrySheet } from '@/components/scanner/ManualEntrySheet';
 import { ScanResultCard } from '@/components/scanner/ScanResultCard';
@@ -18,6 +20,7 @@ import { getScannerBarcodeTypes } from '@/config/appConfig';
 import { useScanFeedback } from '@/hooks/useScanFeedback';
 import { useScanner, type ScannerStatus } from '@/hooks/useScanner';
 import { getStats } from '@/services/cellService';
+import { MessageState } from '@/components/ui/StateViews';
 import { colors, radius, shadows } from '@/theme';
 
 /** Camera dimming per state: dark while scanning, a brief colour tint on a result. */
@@ -30,8 +33,25 @@ const OVERLAY: Record<ScannerStatus, string> = {
   error: 'rgba(127,29,29,0.45)',
 };
 
-/** 07 - QR Scanner (+ 08 feedback states shown in the bottom card) */
+/** Scanning registers new cells, which only an Admin may do. Viewers get a read-only notice instead. */
 export default function ScanScreen() {
+  const { status, canWrite } = useAuth();
+  if (status === 'loading') return null;
+  if (!canWrite) {
+    return (
+      <View style={{ flex: 1, backgroundColor: colors.background }}>
+        <BrandHeader>
+          <TurnoLogo height={28} />
+        </BrandHeader>
+        <MessageState icon="lock-outline" title="Read-only access" message="Your account can view cells but cannot register new ones." />
+      </View>
+    );
+  }
+  return <ScannerScreen />;
+}
+
+/** 07 - QR Scanner (+ 08 feedback states shown in the bottom card) */
+function ScannerScreen() {
   const [permission, requestPermission] = useCameraPermissions();
 
   const [focused, setFocused] = useState(false);

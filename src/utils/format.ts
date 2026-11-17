@@ -1,4 +1,4 @@
-import type { InspectionStatus, QcStatus } from '@/models/cell';
+import type { QcStatus } from '@/models/cell';
 
 /** `1` -> `#001` */
 export function formatSerial(serial: number): string {
@@ -45,8 +45,3 @@ export function formatDateTime(iso: string): string {
 }
 
 export const QC_LABEL: Record<QcStatus, string> = { passed: 'Passed', failed: 'Failed', pending: 'Pending' };
-export const INSPECTION_LABEL: Record<InspectionStatus, string> = {
-  complete: 'Complete',
-  in_progress: 'In progress',
-  not_started: 'Not started',
-};

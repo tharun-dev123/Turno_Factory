@@ -18,9 +18,10 @@ import { LoadingState, MessageState } from '@/components/ui/StateViews';
 import { TextField } from '@/components/ui/TextField';
 import { useToast } from '@/components/ui/Toast';
 import { appConfig } from '@/config/appConfig';
+import { useAuth } from '@/context/AuthContext';
 import { useCell } from '@/hooks/useCell';
 import { useCellForm, type CellFormValues } from '@/hooks/useCellForm';
-import type { CellRecord } from '@/models/cell';
+import { MAX_REMARKS_LENGTH, REMARKS_REQUIRED_STATUSES, VISUAL_INSPECTION_STATUSES, type CellRecord, type VisualInspectionStatus } from '@/models/cell';
 import { colors, radius } from '@/theme';
 import { formatSerial } from '@/utils/format';
 
@@ -62,7 +63,8 @@ function MeasurementField({ label, unit, field, values, errors, setField }: Meas
   );
 }
 
-function EditForm({ cell }: { cell: CellRecord }) {
+/** `latestVersion` is the newest version the app has seen. When it is ahead of `cell`, the form is out of date. */
+function EditForm({ cell, latestVersion }: { cell: CellRecord; latestVersion: number }) {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const keyboardVisible = useKeyboardVisible();
@@ -114,6 +116,15 @@ function EditForm({ cell }: { cell: CellRecord }) {
       </BrandHeader>
 
       <KeyboardAwareScrollView contentContainerStyle={{ padding: 16, gap: 14, paddingBottom: 24 }}>
+        {latestVersion > cell.version ? (
+          <View accessibilityRole="alert" style={{ flexDirection: 'row', gap: 8, alignItems: 'center', padding: 12, borderRadius: radius.lg, backgroundColor: colors.amber50, borderWidth: 1, borderColor: colors.amber200 }}>
+            <Icon name="info-outline" size={18} color={colors.amber800} />
+            <AppText variant="bodySm" color={colors.amber800} style={{ flex: 1 }}>
+              This cell was updated by someone else. Go back and reopen it to edit the latest values, or saving will be refused.
+            </AppText>
+          </View>
+        ) : null}
+
         {formError ? (
           <View accessibilityRole="alert" style={{ flexDirection: 'row', gap: 8, alignItems: 'center', padding: 12, borderRadius: radius.lg, backgroundColor: colors.red50, borderWidth: 1, borderColor: colors.red200 }}>
             <Icon name="error-outline" size={18} color={colors.red600} />
@@ -201,6 +212,29 @@ function EditForm({ cell }: { cell: CellRecord }) {
             <MeasurementField label="DCIR @90%" unit="mΩ" field="dcir90Mohm" values={values} errors={errors} setField={setField} />
           </View>
         </DetailSection>
+
+        <DetailSection title="Visual Inspection">
+          <View style={{ padding: 16, gap: 14 }}>
+            <SelectField
+              label="Visual Inspection Status"
+              value={values.visualInspectionStatus}
+              options={VISUAL_INSPECTION_STATUSES}
+              allowClear={false}
+              error={errors.visualInspectionStatus}
+              onChange={(status) => status && setField('visualInspectionStatus', status as VisualInspectionStatus)}
+            />
+            <TextField
+              label={REMARKS_REQUIRED_STATUSES.includes(values.visualInspectionStatus) ? 'Remarks (required)' : 'Remarks'}
+              multiline
+              maxLength={MAX_REMARKS_LENGTH}
+              value={values.remarks}
+              onChangeText={(text) => setField('remarks', text)}
+              placeholder={REMARKS_REQUIRED_STATUSES.includes(values.visualInspectionStatus) ? 'Describe the issue' : 'Optional'}
+              error={errors.remarks}
+              accessibilityLabel="Remarks"
+            />
+          </View>
+        </DetailSection>
       </KeyboardAwareScrollView>
 
       <View
@@ -248,18 +282,29 @@ function EditForm({ cell }: { cell: CellRecord }) {
 export default function EditCellScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
-  const { cell, state, error, retry } = useCell(id);
+  const { status, canWrite } = useAuth();
+  // Open instantly from the last known copy; the latest copy loads in the background.
+  const { cell, state, error, retry } = useCell(id, { showKnownFirst: true });
+
+  // The form is built once, from the first copy it sees. A later background refresh must never replace it:
+  // that would change the fields under the user's fingers and the version their save is checked against.
+  const [formCell, setFormCell] = useState<CellRecord | null>(null);
+  if (cell && (formCell === null || formCell.id !== cell.id)) setFormCell(cell);
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
-      {state === 'loading' ? (
+      {status === 'loading' ? (
+        <LoadingState label="Loading..." />
+      ) : !canWrite ? (
+        <MessageState icon="lock-outline" title="Read-only access" message="Your account can view cells but cannot edit them." actionLabel="Back" onAction={() => router.back()} />
+      ) : state === 'loading' ? (
         <LoadingState label="Loading cell..." />
       ) : state === 'not_found' ? (
         <MessageState icon="search-off" title="Cell not found" message="It may have been deleted." actionLabel="Back" onAction={() => router.back()} />
-      ) : state === 'error' || !cell ? (
+      ) : state === 'error' || !cell || !formCell ? (
         <MessageState tone="danger" icon="cloud-off" title="Could not load this cell" message={error ?? undefined} actionLabel="Retry" onAction={retry} />
       ) : (
-        <EditForm key={cell.id} cell={cell} />
+        <EditForm key={formCell.id} cell={formCell} latestVersion={cell.version} />
       )}
     </View>
   );

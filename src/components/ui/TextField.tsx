@@ -51,8 +51,8 @@ export function TextField({
       <View
         style={{
           flexDirection: 'row',
-          alignItems: 'center',
-          height: 48,
+          alignItems: inputProps.multiline ? 'flex-start' : 'center',
+          ...(inputProps.multiline ? { minHeight: 96, paddingVertical: 12 } : { height: 48 }),
           paddingHorizontal: 14,
           gap: 10,
           borderRadius: radius.xl,
@@ -79,7 +79,7 @@ export function TextField({
           }}
           style={{
             flex: 1,
-            height: '100%',
+            ...(inputProps.multiline ? { textAlignVertical: 'top' as const, minHeight: 72 } : { height: '100%' as const }),
             color: colors.text,
             fontSize: 14,
             fontFamily: mono ? fontFamily.monoBold : fontFamily.bodyMedium,

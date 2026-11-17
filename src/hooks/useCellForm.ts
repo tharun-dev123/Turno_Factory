@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useState } from 'react';
 
-import type { CellRecord, EditableFieldKey, ScanSource } from '@/models/cell';
+import type { CellRecord, EditableFieldKey, ScanSource, VisualInspectionStatus } from '@/models/cell';
 import { updateCell, type UpdateCellRequest } from '@/services/cellService';
 import { getErrorMessage, ValidationError } from '@/services/errors';
 import { FIELD_LABELS, formatNumberInput, NUMERIC_FIELDS, parseNumberInput } from '@/utils/validators';
@@ -16,6 +16,8 @@ export interface CellFormValues {
   dcir20Mohm: string;
   dcir50Mohm: string;
   dcir90Mohm: string;
+  visualInspectionStatus: VisualInspectionStatus;
+  remarks: string;
 }
 
 export interface PendingBarcode {
@@ -35,10 +37,12 @@ function toFormValues(cell: CellRecord): CellFormValues {
     dcir20Mohm: formatNumberInput(cell.dcir20Mohm),
     dcir50Mohm: formatNumberInput(cell.dcir50Mohm),
     dcir90Mohm: formatNumberInput(cell.dcir90Mohm),
+    visualInspectionStatus: cell.visualInspectionStatus,
+    remarks: cell.remarks ?? '',
   };
 }
 
-const normalizeForCompare = (values: CellFormValues) => JSON.stringify({ ...values, cellLocalNumber: values.cellLocalNumber.trim() });
+const normalizeForCompare = (values: CellFormValues) => JSON.stringify({ ...values, cellLocalNumber: values.cellLocalNumber.trim(), remarks: values.remarks.trim() });
 
 /** State + save logic for the Edit Cell screen. Saves only through cellService. */
 export function useCellForm(cell: CellRecord) {
@@ -69,6 +73,8 @@ export function useCellForm(cell: CellRecord) {
     const request: UpdateCellRequest = {
       sortingGrade: values.sortingGrade,
       cellLocalNumber: values.cellLocalNumber,
+      visualInspectionStatus: values.visualInspectionStatus,
+      remarks: values.remarks,
       // Reject the save (instead of overwriting) if someone else changed this cell after it was loaded.
       expectedVersion: cell.version,
     };

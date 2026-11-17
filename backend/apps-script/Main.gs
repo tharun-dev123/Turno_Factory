@@ -7,15 +7,23 @@
  *   { "ok": true, "data": { ... } }  |  { "ok": false, "error": { "code", "message", "details" } }
  */
 
+/**
+ * `roles` lists who may call a protected action. Every read is open to both roles. Anything that changes data
+ * is Admin only, and an entry without `roles` defaults to Admin only (fail closed).
+ */
+// Plain strings (equal to ROLE_ADMIN / ROLE_VIEWER in Config.gs) so this file does not depend on file load order.
+var READ_ROLES = ['admin', 'viewer'];
+var WRITE_ROLES = ['admin'];
+
 var ACTIONS = {
   health: { auth: false, handler: handleHealth },
   'auth.login': { auth: false, handler: handleLogin },
-  'cells.list': { auth: true, handler: handleList },
-  'cells.get': { auth: true, handler: handleGet },
-  'cells.findByBarcode': { auth: true, handler: handleFindByBarcode },
-  'cells.create': { auth: true, handler: handleCreate },
-  'cells.update': { auth: true, handler: handleUpdate },
-  'cells.delete': { auth: true, handler: handleDelete },
+  'cells.list': { auth: true, roles: READ_ROLES, handler: handleList },
+  'cells.get': { auth: true, roles: READ_ROLES, handler: handleGet },
+  'cells.findByBarcode': { auth: true, roles: READ_ROLES, handler: handleFindByBarcode },
+  'cells.create': { auth: true, roles: WRITE_ROLES, handler: handleCreate },
+  'cells.update': { auth: true, roles: WRITE_ROLES, handler: handleUpdate },
+  'cells.delete': { auth: true, roles: WRITE_ROLES, handler: handleDelete },
 };
 
 function handleHealth() {
@@ -39,7 +47,14 @@ function handleRequest(body) {
   if (!isPlainObject(body)) fail('VALIDATION', 'The request must be a JSON object.', { reason: 'BAD_REQUEST' });
   var entry = typeof body.action === 'string' && Object.prototype.hasOwnProperty.call(ACTIONS, body.action) ? ACTIONS[body.action] : null;
   if (!entry) fail('VALIDATION', 'Unknown action.', { reason: 'UNKNOWN_ACTION' });
-  if (entry.auth) requireAuth(body.token);
+  if (entry.auth) {
+    var claims = requireAuth(body.token);
+    var allowed = entry.roles || WRITE_ROLES;
+    // Checked before any payload validation or locking, so a forbidden call can never touch the sheets.
+    if (allowed.indexOf(claims.role) === -1) {
+      fail('FORBIDDEN', 'Your account has read-only access and cannot make changes.', { reason: 'READ_ONLY' });
+    }
+  }
   var payload = body.payload === undefined || body.payload === null ? {} : body.payload;
   return entry.handler(payload, body);
 }

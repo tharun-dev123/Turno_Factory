@@ -45,7 +45,7 @@ function runSelfTest() {
     return row ? sheet.getRange(row, 1, 1, CELL_HEADERS.length).getValues()[0] : null;
   }
 
-  var token = issueToken(getProp(PROP.authUsername)).token;
+  var token = issueToken(getProp(PROP.authUsername), ROLE_ADMIN).token;
 
   /** Create a test cell and remember it so it can be removed even if the run is interrupted. */
   function createTracked(payload, extra) {
@@ -96,7 +96,7 @@ function runSelfTest() {
       check('raw payload preserved exactly', cell1.rawPayload === payload1, JSON.stringify(cell1.rawPayload));
       check('pilot record is UNVERIFIED', cell1.validationStatus === 'UNVERIFIED' && cell1.validationMode === 'pilot', cell1.validationMode + '/' + cell1.validationStatus);
       var row1 = cellsSheetRow(cell1.serialNumber);
-      check('sheet row has serial + barcode only', !!row1 && String(row1[0]) === String(cell1.serialNumber) && row1[1] === cell1.batteryBarcode && row1.slice(2).every(function (v) { return v === ''; }), JSON.stringify(row1));
+      check('sheet row has serial + barcode + default status only', !!row1 && String(row1[0]) === String(cell1.serialNumber) && row1[1] === cell1.batteryBarcode && row1[COL.visualStatus] === DEFAULT_VISUAL_STATUS && row1.slice(2).every(function (v, i) { return i + 2 === COL.visualStatus || v === ''; }), JSON.stringify(row1));
     }
 
     // 4. Idempotent retry

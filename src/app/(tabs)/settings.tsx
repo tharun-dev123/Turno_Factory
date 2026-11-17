@@ -49,7 +49,7 @@ function InfoRow({ icon, label, value, mono }: { icon: IconName; label: string; 
 export default function SettingsScreen() {
   const router = useRouter();
   const toast = useToast();
-  const { session, signOut } = useAuth();
+  const { session, role, signOut } = useAuth();
   const [confirmVisible, setConfirmVisible] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
 
@@ -80,6 +80,7 @@ export default function SettingsScreen() {
       <ScrollView contentContainerStyle={{ padding: 16, gap: 16 }}>
         <Card style={{ borderRadius: radius.xxl, paddingVertical: 8 }}>
           <InfoRow icon="badge" label="Signed in as" value={session?.username ?? '—'} />
+          <InfoRow icon="lock-outline" label="Access" value={role === 'admin' ? 'Admin (full access)' : 'Viewer (read-only)'} />
           <InfoRow icon="storage" label="Data source" value={`${appConfig.storage.name} (${appConfig.dataMode})`} />
         </Card>
 

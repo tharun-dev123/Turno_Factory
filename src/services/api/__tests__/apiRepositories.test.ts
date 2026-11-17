@@ -20,6 +20,8 @@ const dto = (overrides: Partial<ApiCell> = {}): ApiCell => ({
   dcir20Mohm: null,
   dcir50Mohm: null,
   dcir90Mohm: null,
+  visualInspectionStatus: 'Under Review',
+  remarks: null,
   stationId: 'A-12',
   lineId: '04',
   scannedAt: '2026-11-11T10:00:00.000Z',
@@ -46,10 +48,30 @@ describe('API cell repository', () => {
       validationMode: 'development',
       syncStatus: 'synced',
       qcStatus: 'pending',
-      inspectionStatus: 'not_started',
+      visualInspectionStatus: 'Under Review', remarks: null,
       version: 3,
     });
     expect(second).toMatchObject({ rawPayload: null, sortingGrade: 'A1', cellWeightG: 3120.4 });
+  });
+
+  it('maps the visual inspection fields and falls back to "Under Review" for a missing or unknown status', async () => {
+    const { client } = fakeClient({
+      cells: [
+        dto({ visualInspectionStatus: 'Damaged', remarks: 'Dent' }),
+        dto({ id: '8', serialNumber: 8, visualInspectionStatus: 'whatever' }),
+        { ...dto({ id: '9', serialNumber: 9 }), visualInspectionStatus: undefined, remarks: undefined } as unknown as ApiCell,
+      ],
+    });
+    const [a, b, c] = await createApiCellRepository(client).list();
+    expect(a).toMatchObject({ visualInspectionStatus: 'Damaged', remarks: 'Dent' });
+    expect(b).toMatchObject({ visualInspectionStatus: 'Under Review', remarks: null });
+    expect(c).toMatchObject({ visualInspectionStatus: 'Under Review', remarks: null });
+  });
+
+  it('sends the visual inspection fields in the update patch', async () => {
+    const { client, call } = fakeClient({ cell: dto({ visualInspectionStatus: 'Rejected', remarks: 'Swollen' }) });
+    await createApiCellRepository(client).update('7', { visualInspectionStatus: 'Rejected', remarks: 'Swollen', expectedVersion: 3, requestId: 'r-1' });
+    expect(call).toHaveBeenCalledWith('cells.update', { id: '7', expectedVersion: 3, patch: { visualInspectionStatus: 'Rejected', remarks: 'Swollen' } }, expect.anything());
   });
 
   it('only a production-VERIFIED record is marked production', async () => {

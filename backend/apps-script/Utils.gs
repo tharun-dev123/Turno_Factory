@@ -22,7 +22,7 @@ function nowIso() {
 }
 
 // ---------------------------------------------------------------------------------------------
-// Errors. Codes: DUPLICATE_BARCODE, VALIDATION, NOT_FOUND, AUTH, CONFLICT, BUSY, INTERNAL
+// Errors. Codes: DUPLICATE_BARCODE, VALIDATION, NOT_FOUND, AUTH, FORBIDDEN, CONFLICT, BUSY, INTERNAL
 // ---------------------------------------------------------------------------------------------
 
 function ApiError(code, message, details) {
@@ -114,6 +114,8 @@ function constantTimeEquals(a, b) {
 // ---------------------------------------------------------------------------------------------
 
 var CONTROL_CHARS = /[\u0000-\u001F\u007F]/;
+/** Control characters except tab, line feed and carriage return (allowed inside Remarks). */
+var REMARKS_BAD_CHARS = /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/;
 
 function isPlainObject(value) {
   return value !== null && typeof value === 'object' && !Array.isArray(value);
@@ -219,6 +221,8 @@ function validatePatch(patch) {
   var i;
   for (i = 0; i < TEXT_FIELDS.length; i++) allowed[TEXT_FIELDS[i].key] = 'text';
   for (i = 0; i < NUMERIC_FIELDS.length; i++) allowed[NUMERIC_FIELDS[i].key] = 'number';
+  allowed.visualInspectionStatus = 'status';
+  allowed.remarks = 'remarks';
 
   var errors = {};
   var clean = {};
@@ -229,7 +233,23 @@ function validatePatch(patch) {
       errors[key] = 'This field cannot be edited.';
       return;
     }
-    if (kind === 'number') {
+    if (kind === 'status') {
+      // Exactly one of the four statuses: null, blank or unknown values are rejected.
+      if (typeof value !== 'string' || VISUAL_STATUSES.indexOf(value) === -1) {
+        errors[key] = 'Must be one of: ' + VISUAL_STATUSES.join(', ') + '.';
+      } else {
+        clean[key] = value;
+      }
+    } else if (kind === 'remarks') {
+      // Longer than other text fields; line breaks and tabs are allowed, other control characters are not.
+      if (value === null) clean[key] = null;
+      else if (typeof value !== 'string' || value.length > LIMITS.maxRemarksLength || REMARKS_BAD_CHARS.test(value)) {
+        errors[key] = 'Invalid text (max ' + LIMITS.maxRemarksLength + ' characters, no control characters).';
+      } else {
+        var remarksTrimmed = value.replace(/^\s+|\s+$/g, '');
+        clean[key] = remarksTrimmed === '' ? null : remarksTrimmed;
+      }
+    } else if (kind === 'number') {
       if (value === null) clean[key] = null;
       else if (typeof value !== 'number' || !isFinite(value)) errors[key] = 'Must be a number.';
       else if (value < 0) errors[key] = 'Cannot be negative.';

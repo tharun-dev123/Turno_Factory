@@ -76,19 +76,56 @@ export function validateBarcode(rawPayload: string): BarcodeCheckResult {
   return checkScanPayload(rawPayload);
 }
 
+// ---------------------------------------------------------------------------------------------
+// Last known copy of each cell. Screens use it to show a cell instantly while the fresh copy loads
+// (the backend takes seconds to answer). It is only a display shortcut: every write still checks the
+// cell's version on the server, and it is cleared on sign-out.
+// ---------------------------------------------------------------------------------------------
+
+const knownCells = new Map<string, CellRecord>();
+
+function remember(cell: CellRecord): CellRecord {
+  knownCells.set(cell.id, cell);
+  return cell;
+}
+
+/** The last known copy of a cell, or null. Synchronous, never touches the network. */
+export function peekCell(id: string): CellRecord | null {
+  return knownCells.get(id) ?? null;
+}
+
+/** Test hook: pretend this copy is the last known one (for example an out-of-date copy). */
+export function seedCellCache(cell: CellRecord): void {
+  remember(cell);
+}
+
+/** Forget every remembered cell (sign-out, tests). */
+export function clearCellCache(): void {
+  knownCells.clear();
+}
+
 export async function listCells(): Promise<CellRecord[]> {
   const cells = await cellRepository.list();
+  // Replace the whole cache: cells deleted elsewhere must not linger.
+  knownCells.clear();
+  cells.forEach(remember);
   return cells.sort(sortNewestFirst);
 }
 
 export async function getCell(id: string): Promise<CellRecord> {
   const cell = await cellRepository.getById(id);
-  if (!cell) throw new NotFoundError();
-  return cell;
+  if (!cell) {
+    knownCells.delete(id);
+    throw new NotFoundError();
+  }
+  return remember(cell);
 }
 
-/** Case-insensitive partial match on barcode or serial number (`#001`, `001`, `1`). */
-function filterCells(cells: CellRecord[], query: string): CellRecord[] {
+/**
+ * Case-insensitive partial match on barcode or serial number (`#001`, `001`, `1`). Pure and synchronous, so a
+ * screen that already holds the list can search it without another request.
+ */
+export function filterCells(cells: CellRecord[], query: string): CellRecord[] {
   const needle = query.trim().toLowerCase();
   if (needle === '') return cells;
 
@@ -201,7 +238,7 @@ export async function createCell(request: NewCellRequest): Promise<CellRecord> {
   try {
     const cell = await cellRepository.create({ ...input, requestId });
     settleRequest(key);
-    return cell;
+    return remember(cell);
   } catch (error) {
     settleRequest(key, error);
     throw error;
@@ -254,7 +291,7 @@ export async function updateCell(id: string, request: UpdateCellRequest): Promis
   try {
     const cell = await cellRepository.update(id, { ...input, requestId });
     settleRequest(key);
-    return cell;
+    return remember(cell);
   } catch (error) {
     settleRequest(key, error);
     throw error;
@@ -266,11 +303,13 @@ export async function deleteCell(id: string): Promise<void> {
   const { requestId, resumed } = acquireRequestId(key);
   try {
     await cellRepository.remove(id, requestId);
+    knownCells.delete(id);
     settleRequest(key);
   } catch (error) {
     // A repeated delete that finds nothing, after an earlier attempt whose outcome was unknown, means the
     // earlier attempt did go through: that is a success, not an error.
     if (resumed && error instanceof NotFoundError) {
+      knownCells.delete(id);
       settleRequest(key);
       return;
     }
@@ -284,5 +323,6 @@ function normalizeFields(fields: Partial<EditableCellFields>): Partial<EditableC
   const result: Partial<EditableCellFields> = { ...fields };
   if ('sortingGrade' in fields) result.sortingGrade = normalizeText(fields.sortingGrade);
   if ('cellLocalNumber' in fields) result.cellLocalNumber = normalizeText(fields.cellLocalNumber);
+  if ('remarks' in fields) result.remarks = normalizeText(fields.remarks);
   return result;
 }

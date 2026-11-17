@@ -98,6 +98,11 @@ class FakeRange {
     }
     return this;
   }
+  setDataValidation(rule) {
+    this.sheet._enter('setDataValidation', this, rule);
+    this.sheet.validations.push({ row: this.row, col: this.col, numRows: this.numRows, numCols: this.numCols, rule });
+    return this;
+  }
   protect() {
     const protection = {
       description: '',
@@ -128,6 +133,7 @@ class FakeSheet {
     this.maxCols = maxCols;
     this.frozenRows = 0;
     this.protections = [];
+    this.validations = []; // data-validation rules applied to ranges
     this.faults = [];
     this.formulas = new Map(); // "r,c" -> formula text (cells Sheets interpreted as formulas)
     this.hostile = false; // test switch: Sheets mangles text even in plain-text cells
@@ -304,6 +310,22 @@ function createBackend(options = {}) {
   const ctx = vm.createContext({
     SpreadsheetApp: {
       ProtectionType: { RANGE: 'RANGE' },
+      newDataValidation: () => {
+        const rule = { values: [], dropdown: false, allowInvalid: true };
+        const builder = {
+          requireValueInList(values, dropdown) {
+            rule.values = values.slice();
+            rule.dropdown = dropdown;
+            return this;
+          },
+          setAllowInvalid(v) {
+            rule.allowInvalid = v;
+            return this;
+          },
+          build: () => rule,
+        };
+        return builder;
+      },
       newRichTextValue: () => {
         const builder = {
           text: '',

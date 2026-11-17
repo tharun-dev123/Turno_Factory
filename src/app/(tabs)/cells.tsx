@@ -12,6 +12,7 @@ import { SearchBar } from '@/components/ui/SearchBar';
 import { LoadingState, MessageState } from '@/components/ui/StateViews';
 import { TurnoLogo } from '@/components/ui/TurnoLogo';
 import { appConfig } from '@/config/appConfig';
+import { useAuth } from '@/context/AuthContext';
 import { useCells } from '@/hooks/useCells';
 import type { CellRecord } from '@/models/cell';
 import { colors } from '@/theme';
@@ -20,6 +21,7 @@ import { formatCount } from '@/utils/format';
 /** 03 - All Cells Dashboard */
 export default function AllCellsScreen() {
   const router = useRouter();
+  const { canWrite } = useAuth();
   const { query, setQuery, cells, stats, state, error, refreshing, refresh, retry } = useCells();
 
   const openCell = (cell: CellRecord) => router.push({ pathname: '/cell/[id]', params: { id: cell.id } });
@@ -106,9 +108,9 @@ export default function AllCellsScreen() {
             <MessageState
               icon="inventory-2"
               title="No cells registered yet"
-              message="Scan a battery cell to register it. It will appear here."
-              actionLabel="Scan a cell"
-              onAction={() => router.navigate('/(tabs)/scan')}
+              message={canWrite ? 'Scan a battery cell to register it. It will appear here.' : 'No battery cells have been registered yet.'}
+              actionLabel={canWrite ? 'Scan a cell' : undefined}
+              onAction={canWrite ? () => router.navigate('/(tabs)/scan') : undefined}
             />
           )
         }

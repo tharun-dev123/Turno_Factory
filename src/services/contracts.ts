@@ -24,11 +24,16 @@ export interface CellRepository {
   remove(id: string, requestId?: string): Promise<void>;
 }
 
+/** `admin` can read and write. `viewer` is read-only. Anything unknown is treated as `viewer`. */
+export type UserRole = 'admin' | 'viewer';
+
 export interface AuthTokenResult {
   token: string;
   /** ISO timestamp */
   expiresAt: string;
   username: string;
+  /** Missing on a backend that predates roles; the app then treats the account as a viewer. */
+  role?: UserRole | string;
 }
 
 export interface AuthBackend {

@@ -221,6 +221,20 @@ function handleUpdate(payload, body) {
         newCellValues[NUMERIC_FIELDS[i].col] = num === null ? '' : num;
       }
     }
+    if (Object.prototype.hasOwnProperty.call(patch, 'visualInspectionStatus')) {
+      newCellValues[COL.visualStatus] = patch.visualInspectionStatus;
+    }
+    if (Object.prototype.hasOwnProperty.call(patch, 'remarks')) {
+      newCellValues[COL.remarks] = patch.remarks === null ? '' : patch.remarks;
+    }
+    // Rule applies to the RESULTING state, so changing only the status (or clearing only the remarks) is checked too.
+    var resultingStatus = normalizeVisualStatus(newCellValues[COL.visualStatus]);
+    var resultingRemarks = String(newCellValues[COL.remarks] === undefined ? '' : newCellValues[COL.remarks]).replace(/^\s+|\s+$/g, '');
+    if (REMARKS_REQUIRED_STATUSES.indexOf(resultingStatus) !== -1 && resultingRemarks === '') {
+      fail('VALIDATION', 'Remarks are required when the status is ' + resultingStatus + '.', {
+        fieldErrors: { remarks: 'Required when the status is ' + resultingStatus + '.' },
+      });
+    }
     if (check) newCellValues[COL.barcode] = check.barcode;
 
     var newMetaValues = metaRow.values.slice();

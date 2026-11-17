@@ -8,6 +8,10 @@ type AuthStatus = 'loading' | 'authenticated' | 'unauthenticated';
 interface AuthContextValue {
   status: AuthStatus;
   session: Session | null;
+  /** Role of the signed-in user. `viewer` when signed out (fail closed). */
+  role: 'admin' | 'viewer';
+  /** True only for Admin. Controls the visibility of add, edit and delete UI. */
+  canWrite: boolean;
   signIn: (username: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
 }
@@ -58,7 +62,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setStatus('unauthenticated');
   }, []);
 
-  const value = useMemo(() => ({ status, session, signIn, signOut }), [status, session, signIn, signOut]);
+  const role: 'admin' | 'viewer' = session?.role === 'admin' ? 'admin' : 'viewer';
+  const value = useMemo(
+    () => ({ status, session, role, canWrite: role === 'admin', signIn, signOut }),
+    [status, session, role, signIn, signOut],
+  );
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 

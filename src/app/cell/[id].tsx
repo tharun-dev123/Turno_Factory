@@ -5,6 +5,7 @@ import { Pressable, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { DetailRow, DetailSection, MeasurementValue } from '@/components/cells/DetailParts';
+import { VisualStatusPill } from '@/components/cells/VisualStatusPill';
 import { DeleteCellDialog } from '@/components/dialogs/DeleteCellDialog';
 import { AppText } from '@/components/ui/AppText';
 import { BrandHeader } from '@/components/ui/BrandHeader';
@@ -14,6 +15,7 @@ import { Icon } from '@/components/ui/Icon';
 import { Pill } from '@/components/ui/Pill';
 import { LoadingState, MessageState } from '@/components/ui/StateViews';
 import { useToast } from '@/components/ui/Toast';
+import { useAuth } from '@/context/AuthContext';
 import { useCell } from '@/hooks/useCell';
 import { deleteCell } from '@/services/cellService';
 import { getErrorMessage, NotFoundError } from '@/services/errors';
@@ -26,7 +28,8 @@ export default function CellDetailsScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const toast = useToast();
-  const { cell, state, error, retry } = useCell(id);
+  const { canWrite } = useAuth();
+  const { cell, state, error, retry } = useCell(id, { showKnownFirst: true });
 
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -163,8 +166,25 @@ export default function CellDetailsScreen() {
               <DetailRow icon="speed" label="DCIR @50%" value={<MeasurementValue value={cell.dcir50Mohm} unit="mΩ" />} />
               <DetailRow icon="speed" last label="DCIR @90%" value={<MeasurementValue value={cell.dcir90Mohm} unit="mΩ" />} />
             </DetailSection>
+
+            <DetailSection title="Visual Inspection">
+              <DetailRow icon="visibility" label="Status" value={<VisualStatusPill status={cell.visualInspectionStatus} />} last={!cell.remarks} />
+              {cell.remarks ? (
+                <DetailRow
+                  icon="notes"
+                  label="Remarks"
+                  last
+                  below={
+                    <AppText variant="bodyMd" color={colors.slate700} selectable>
+                      {cell.remarks}
+                    </AppText>
+                  }
+                />
+              ) : null}
+            </DetailSection>
           </ScrollView>
 
+          {canWrite ? (
           <View
             style={{
               flexDirection: 'row',
@@ -188,6 +208,7 @@ export default function CellDetailsScreen() {
               testID="edit-cell-button"
             />
           </View>
+          ) : null}
         </>
       )}
 

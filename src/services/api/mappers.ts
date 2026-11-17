@@ -1,10 +1,23 @@
-import type { CellRecord, CreateCellInput, EditableFieldKey, UpdateCellInput } from '@/models/cell';
+import {
+  DEFAULT_VISUAL_STATUS,
+  VISUAL_INSPECTION_STATUSES,
+  type CellRecord,
+  type CreateCellInput,
+  type EditableFieldKey,
+  type UpdateCellInput,
+  type VisualInspectionStatus,
+} from '@/models/cell';
 import { NUMERIC_FIELDS, TEXT_FIELDS } from '@/utils/validators';
 
 import { ValidationError } from '../errors';
 import type { ApiCell } from './types';
 
-/** Backend cell -> app model. QC / inspection / sync status are display-only defaults (not stored). */
+/** A missing or unknown status (for example from an older backend) reads as the default, never as free text. */
+function toVisualStatus(value: unknown): VisualInspectionStatus {
+  return VISUAL_INSPECTION_STATUSES.find((status) => status === value) ?? DEFAULT_VISUAL_STATUS;
+}
+
+/** Backend cell -> app model. QC / sync status are display-only defaults (not stored). */
 export function toCellRecord(dto: ApiCell): CellRecord {
   return {
     id: dto.id,
@@ -23,6 +36,8 @@ export function toCellRecord(dto: ApiCell): CellRecord {
     dcir20Mohm: dto.dcir20Mohm,
     dcir50Mohm: dto.dcir50Mohm,
     dcir90Mohm: dto.dcir90Mohm,
+    visualInspectionStatus: toVisualStatus(dto.visualInspectionStatus),
+    remarks: dto.remarks ?? null,
     stationId: dto.stationId,
     lineId: dto.lineId,
     scannedAt: dto.scannedAt,
@@ -30,12 +45,11 @@ export function toCellRecord(dto: ApiCell): CellRecord {
     updatedAt: dto.updatedAt,
     syncStatus: 'synced',
     qcStatus: 'pending',
-    inspectionStatus: 'not_started',
     version: dto.version,
   };
 }
 
-const EDITABLE_KEYS: readonly EditableFieldKey[] = [...TEXT_FIELDS, ...NUMERIC_FIELDS];
+const EDITABLE_KEYS: readonly EditableFieldKey[] = [...TEXT_FIELDS, ...NUMERIC_FIELDS, 'visualInspectionStatus', 'remarks'];
 
 /** Registering a cell sends only the scanned code (+ scan time and station/line). */
 export function toCreatePayload(input: CreateCellInput): Record<string, unknown> {

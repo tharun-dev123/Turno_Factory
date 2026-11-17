@@ -5,9 +5,18 @@ import * as SecureStore from 'expo-secure-store';
  * The token lives in the device's secure storage; it is never written anywhere else.
  */
 
+export type SessionRole = 'admin' | 'viewer';
+
+/** Fail closed: only the exact value 'admin' grants write access in the UI. */
+export function normalizeRole(value: unknown): SessionRole {
+  return value === 'admin' ? 'admin' : 'viewer';
+}
+
 export interface Session {
   token: string;
   username: string;
+  /** Used only to show or hide controls. The backend enforces permissions itself. */
+  role: SessionRole;
   /** ISO timestamp */
   expiresAt: string;
 }
@@ -64,7 +73,8 @@ export async function readSession(): Promise<Session | null> {
       await clearSession();
       return null;
     }
-    return parsed;
+    // A session saved before roles existed has no role: treat it as a viewer (the backend does the same).
+    return { ...parsed, role: normalizeRole((parsed as { role?: unknown }).role) };
   } catch {
     await clearSession();
     return null;

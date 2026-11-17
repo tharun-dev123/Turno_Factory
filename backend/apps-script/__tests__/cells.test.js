@@ -24,7 +24,7 @@ describe('sheet layout', () => {
   it('creates the three tabs with the exact headers, in the exact column order', () => {
     const b = createBackend();
     const header = (sheet, n) => Array.from({ length: n }, (_, i) => sheet._get(1, i + 1));
-    expect(header(b.sheets.cells, 11)).toEqual([
+    expect(header(b.sheets.cells, 13)).toEqual([
       'Serial Number',
       'Battery Barcode',
       'Sorting',
@@ -36,6 +36,8 @@ describe('sheet layout', () => {
       'DCIR @20%',
       'DCIR @50%',
       'DCIR @90%',
+      'Visual Inspection Status',
+      'Remarks',
     ]);
     expect(header(b.sheets.meta, 11)).toEqual([
       'Serial Number',
@@ -98,7 +100,7 @@ describe('cells.create', () => {
     });
 
     const [row] = b.sheets.cells.dump();
-    expect(row).toEqual(['1', 'ABC-123', '', '', '', '', '', '', '', '', '']);
+    expect(row).toEqual(['1', 'ABC-123', '', '', '', '', '', '', '', '', '', 'Under Review', '']);
   });
 
   it('writes CellMeta (raw payload, mode, status, version) and an AuditLog CREATE row', () => {
@@ -337,7 +339,7 @@ describe('concurrency (LockService)', () => {
     b.login();
     let inner = null;
     b.sheets.cells.onOp = (op, range) => {
-      if (op === 'setValues' && range.numCols === 11 && !inner) {
+      if (op === 'setValues' && range.numCols === 13 && !inner) {
         inner = b.create('OVERLAP-2'); // arrives while the first request is mid-write
       }
     };
@@ -442,7 +444,7 @@ describe('idempotency (requestId)', () => {
 });
 
 describe('cells.update', () => {
-  it('maps every editable field to the correct column (A..K) and stores numbers as numbers', () => {
+  it('maps every editable field to the correct column (A..K, L..M) and stores numbers as numbers', () => {
     const b = createBackend();
     b.create('MAP-1');
     const res = update(b, '1', 1, {
@@ -460,7 +462,7 @@ describe('cells.update', () => {
 
     const [row] = b.sheets.cells.dump();
     // A Serial, B Barcode, C Sorting, D Weight, E Voltage, F ACIR, G Local number, H 0.5C, I/J/K DCIR
-    expect(row).toEqual(['1', 'MAP-1', 'Grade A1', 3120.4, 3.652, 0.42, '007', 50.2, 0.68, 0.65, 0.63]);
+    expect(row).toEqual(['1', 'MAP-1', 'Grade A1', 3120.4, 3.652, 0.42, '007', 50.2, 0.68, 0.65, 0.63, 'Under Review', '']);
     expect(typeof row[3]).toBe('number');
     expect(typeof row[6]).toBe('string'); // identifier kept as text ('007', not 7)
 
@@ -499,7 +501,7 @@ describe('cells.update', () => {
     update(b, '1', 1, { cellWeightG: 9, sortingGrade: '  A1  ', cellLocalNumber: 'L4' });
     const res = update(b, '1', 2, { cellWeightG: null, sortingGrade: '   ', cellLocalNumber: null });
     expect(res.data.cell).toMatchObject({ cellWeightG: null, sortingGrade: null, cellLocalNumber: null });
-    expect(b.sheets.cells.dump()[0]).toEqual(['1', 'UPD-2', '', '', '', '', '', '', '', '', '']);
+    expect(b.sheets.cells.dump()[0]).toEqual(['1', 'UPD-2', '', '', '', '', '', '', '', '', '', 'Under Review', '']);
   });
 
   it('rejects invalid values and unknown fields without changing anything', () => {
@@ -521,7 +523,7 @@ describe('cells.update', () => {
       const res = update(b, '1', 1, patch);
       expect(res).toMatchObject({ ok: false, error: { code: 'VALIDATION', details: { fieldErrors: { [field]: expect.any(String) } } } });
     }
-    expect(b.sheets.cells.dump()[0]).toEqual(['1', 'UPD-3', '', '', '', '', '', '', '', '', '']);
+    expect(b.sheets.cells.dump()[0]).toEqual(['1', 'UPD-3', '', '', '', '', '', '', '', '', '', 'Under Review', '']);
     expect(b.sheets.meta.dump()[0][10]).toBe(1);
   });
 
