@@ -27,7 +27,6 @@ export function toCellRecord(dto: ApiCell): CellRecord {
     rawPayload: dto.rawPayload === '' ? null : dto.rawPayload,
     // Only a production-VERIFIED record counts as production data. Pilot (UNVERIFIED) maps to 'development'.
     validationMode: dto.validationMode === 'production' && dto.validationStatus === 'VERIFIED' ? 'production' : 'development',
-    sortingGrade: dto.sortingGrade,
     cellLocalNumber: dto.cellLocalNumber,
     cellWeightG: dto.cellWeightG,
     cellVoltageV: dto.cellVoltageV,

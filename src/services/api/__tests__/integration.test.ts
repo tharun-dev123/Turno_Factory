@@ -179,7 +179,6 @@ describe('create / read', () => {
       version: 1,
       stationId: 'A-12',
       lineId: '04',
-      sortingGrade: null,
       cellWeightG: null,
       cellVoltageV: null,
       acirMohm: null,
@@ -189,7 +188,7 @@ describe('create / read', () => {
       dcir50Mohm: null,
       dcir90Mohm: null,
     });
-    expect(h.backend.sheets.cells.dump()[0]).toEqual(['1', 'QR-PAYLOAD-1', '', '', '', '', '', '', '', '', '', 'Under Review', '']);
+    expect(h.backend.sheets.cells.dump()[0]).toEqual(['1', 'QR-PAYLOAD-1', '', '', '', '', '', '', '', '', 'Under Review', '', expect.stringMatching(/^\d{4}-\d\d-\d\d \d\d:\d\d:\d\d IST$/)]);
     expect(await h.repo.getById('1')).toEqual(cell);
     expect(await h.repo.findByBarcode('QR-PAYLOAD-1')).toEqual(cell);
     expect(await h.repo.findByBarcode('missing')).toBeNull();
@@ -279,7 +278,6 @@ describe('update and optimistic locking', () => {
     const h = await signedIn();
     const created = await h.repo.create(newInput('UPD-1', 'req-int-upd-0'));
     const updated = await h.repo.update(created.id, {
-      sortingGrade: 'Grade A1',
       cellWeightG: 3120.4,
       cellVoltageV: 3.652,
       acirMohm: 0.42,
@@ -292,7 +290,7 @@ describe('update and optimistic locking', () => {
       requestId: 'req-int-upd-1',
     });
     expect(updated.version).toBe(2);
-    expect(h.backend.sheets.cells.dump()[0]).toEqual(['1', 'UPD-1', 'Grade A1', 3120.4, 3.652, 0.42, 'L4-CELL-088', 50.2, 0.68, 0.65, 0.63, 'Under Review', '']);
+    expect(h.backend.sheets.cells.dump()[0]).toEqual(['1', 'UPD-1', 3120.4, 3.652, 0.42, 'L4-CELL-088', 50.2, 0.68, 0.65, 0.63, 'Under Review', '', expect.stringMatching(/^\d{4}-\d\d-\d\d \d\d:\d\d:\d\d IST$/)]);
   });
 
   it('a new cell starts as Under Review and the reviewer can change it; Damaged needs remarks', async () => {
@@ -311,7 +309,7 @@ describe('update and optimistic locking', () => {
       requestId: 'req-int-vis-2',
     });
     expect(updated).toMatchObject({ visualInspectionStatus: 'Damaged', remarks: 'Dent near the terminal', version: 2 });
-    expect(h.backend.sheets.cells.dump()[0].slice(11)).toEqual(['Damaged', 'Dent near the terminal']);
+    expect(h.backend.sheets.cells.dump()[0].slice(10, 12)).toEqual(['Damaged', 'Dent near the terminal']);
   });
 
   it('rejects a stale update with a ConflictError instead of overwriting', async () => {

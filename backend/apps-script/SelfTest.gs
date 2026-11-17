@@ -96,7 +96,7 @@ function runSelfTest() {
       check('raw payload preserved exactly', cell1.rawPayload === payload1, JSON.stringify(cell1.rawPayload));
       check('pilot record is UNVERIFIED', cell1.validationStatus === 'UNVERIFIED' && cell1.validationMode === 'pilot', cell1.validationMode + '/' + cell1.validationStatus);
       var row1 = cellsSheetRow(cell1.serialNumber);
-      check('sheet row has serial + barcode + default status only', !!row1 && String(row1[0]) === String(cell1.serialNumber) && row1[1] === cell1.batteryBarcode && row1[COL.visualStatus] === DEFAULT_VISUAL_STATUS && row1.slice(2).every(function (v, i) { return i + 2 === COL.visualStatus || v === ''; }), JSON.stringify(row1));
+      check('sheet row has serial + barcode + default status + Created At only', !!row1 && String(row1[0]) === String(cell1.serialNumber) && row1[1] === cell1.batteryBarcode && row1[COL.visualStatus] === DEFAULT_VISUAL_STATUS && /^\d{4}-\d\d-\d\d \d\d:\d\d:\d\d IST$/.test(String(row1[COL.createdAt])) && row1.slice(2).every(function (v, i) { return i + 2 === COL.visualStatus || i + 2 === COL.createdAt || v === ''; }), JSON.stringify(row1));
     }
 
     // 4. Idempotent retry
@@ -125,14 +125,13 @@ function runSelfTest() {
       var up = api('cells.update', {
         id: cell1.id,
         expectedVersion: 1,
-        patch: { sortingGrade: 'Grade A1', cellWeightG: 3120.4, cellLocalNumber: '007', dcir90Mohm: 0.63 },
+        patch: { cellWeightG: 3120.4, cellLocalNumber: '007', dcir90Mohm: 0.63 },
       }, { token: token, requestId: rid('upd1') });
       check('update succeeds and bumps version', up.ok && up.data.cell.version === 2, JSON.stringify(up));
       var rowU = cellsSheetRow(cell1.serialNumber);
-      check('Cell Weight (col D) stored as a number', !!rowU && typeof rowU[3] === 'number' && rowU[3] === 3120.4, JSON.stringify(rowU && rowU[3]));
-      check('Cell Local Number (col G) kept as text "007"', !!rowU && rowU[6] === '007', JSON.stringify(rowU && rowU[6]));
-      check('DCIR @90% (col K) stored as a number', !!rowU && rowU[10] === 0.63, JSON.stringify(rowU && rowU[10]));
-      check('Sorting (col C) stored', !!rowU && rowU[2] === 'Grade A1', JSON.stringify(rowU && rowU[2]));
+      check('Cell Weight (col C) stored as a number', !!rowU && typeof rowU[2] === 'number' && rowU[2] === 3120.4, JSON.stringify(rowU && rowU[2]));
+      check('Cell Local Number (col F) kept as text "007"', !!rowU && rowU[5] === '007', JSON.stringify(rowU && rowU[5]));
+      check('DCIR @90% (col J) stored as a number', !!rowU && rowU[9] === 0.63, JSON.stringify(rowU && rowU[9]));
 
       var stale = api('cells.update', { id: cell1.id, expectedVersion: 1, patch: { cellWeightG: 9 } }, { token: token, requestId: rid('upd2') });
       check('stale update rejected with CONFLICT', !stale.ok && stale.error.code === 'CONFLICT', JSON.stringify(stale));

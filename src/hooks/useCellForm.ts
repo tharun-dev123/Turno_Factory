@@ -7,7 +7,6 @@ import { FIELD_LABELS, formatNumberInput, NUMERIC_FIELDS, parseNumberInput } fro
 
 /** Form values: numbers are edited as text so partial input like "3." is possible. */
 export interface CellFormValues {
-  sortingGrade: string | null;
   cellLocalNumber: string;
   cellWeightG: string;
   cellVoltageV: string;
@@ -28,7 +27,6 @@ export interface PendingBarcode {
 
 function toFormValues(cell: CellRecord): CellFormValues {
   return {
-    sortingGrade: cell.sortingGrade,
     cellLocalNumber: cell.cellLocalNumber ?? '',
     cellWeightG: formatNumberInput(cell.cellWeightG),
     cellVoltageV: formatNumberInput(cell.cellVoltageV),
@@ -71,7 +69,6 @@ export function useCellForm(cell: CellRecord) {
 
     const nextErrors: Record<string, string> = {};
     const request: UpdateCellRequest = {
-      sortingGrade: values.sortingGrade,
       cellLocalNumber: values.cellLocalNumber,
       visualInspectionStatus: values.visualInspectionStatus,
       remarks: values.remarks,

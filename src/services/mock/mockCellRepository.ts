@@ -114,7 +114,6 @@ export const mockCellRepository: CellRepository = {
         batteryBarcode: input.batteryBarcode,
         rawPayload: input.rawPayload,
         validationMode: input.validationMode,
-        sortingGrade: input.sortingGrade ?? null,
         cellLocalNumber: input.cellLocalNumber ?? null,
         cellWeightG: input.cellWeightG ?? null,
         cellVoltageV: input.cellVoltageV ?? null,

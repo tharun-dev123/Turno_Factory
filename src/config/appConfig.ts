@@ -94,16 +94,6 @@ export const appConfig = {
     previewCount: 50,
   },
 
-  /**
-   * Sorting grade options for the Edit Cell dropdown.
-   * PLACEHOLDER list taken from the design; the real grade list is still to be confirmed.
-   */
-  sortingGrades: [
-    'Grade A1 (Standard) - High Precision',
-    'Grade A2 (Standard)',
-    'Grade B1 (Reduced)',
-    'Grade C (Reject)',
-  ],
 } as const;
 
 /** Barcode types handed to the camera, honoring the optional DataMatrix flag. */

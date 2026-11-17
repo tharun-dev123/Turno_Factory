@@ -18,7 +18,6 @@ export interface ApiCell {
   validationMode: string;
   /** 'UNVERIFIED' | 'VERIFIED' */
   validationStatus: string;
-  sortingGrade: string | null;
   cellWeightG: number | null;
   cellVoltageV: number | null;
   acirMohm: number | null;

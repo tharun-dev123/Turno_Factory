@@ -15,17 +15,17 @@ var SHEET_NAMES = { cells: 'BatteryCells', meta: 'CellMeta', audit: 'AuditLog' }
 var CELL_HEADERS = [
   'Serial Number', // A
   'Battery Barcode', // B
-  'Sorting', // C
-  'Cell Weight', // D
-  'Cell Voltage', // E
-  'ACIR', // F
-  'Cell Local Number', // G
-  '0.5C DCh capacities', // H
-  'DCIR @20%', // I
-  'DCIR @50%', // J
-  'DCIR @90%', // K
-  'Visual Inspection Status', // L
-  'Remarks', // M
+  'Cell Weight', // C
+  'Cell Voltage', // D
+  'ACIR', // E
+  'Cell Local Number', // F
+  '0.5C DCh capacities', // G
+  'DCIR @20%', // H
+  'DCIR @50%', // I
+  'DCIR @90%', // J
+  'Cell Status', // K
+  'Remarks', // L
+  'Created At', // M (IST text, set by the server when the cell is registered, never edited)
 ];
 
 var META_HEADERS = [
@@ -48,17 +48,17 @@ var AUDIT_HEADERS = ['Timestamp', 'Action', 'SerialNumber', 'Barcode', 'BeforeJS
 var COL = {
   serial: 0,
   barcode: 1,
-  sorting: 2,
-  weight: 3,
-  voltage: 4,
-  acir: 5,
-  localNumber: 6,
-  capacity: 7,
-  dcir20: 8,
-  dcir50: 9,
-  dcir90: 10,
-  visualStatus: 11,
-  remarks: 12,
+  weight: 2,
+  voltage: 3,
+  acir: 4,
+  localNumber: 5,
+  capacity: 6,
+  dcir20: 7,
+  dcir50: 8,
+  dcir90: 9,
+  visualStatus: 10,
+  remarks: 11,
+  createdAt: 12,
 };
 
 var META_COL = {
@@ -79,7 +79,6 @@ var AUDIT_COL = { timestamp: 0, action: 1, serial: 2, barcode: 3, before: 4, aft
 
 /** Editable cell fields: API key -> BatteryCells column. Text columns are stored as text. */
 var TEXT_FIELDS = [
-  { key: 'sortingGrade', col: COL.sorting },
   { key: 'cellLocalNumber', col: COL.localNumber },
 ];
 var NUMERIC_FIELDS = [
@@ -93,7 +92,7 @@ var NUMERIC_FIELDS = [
 ];
 
 /** Columns of BatteryCells that must be plain text (identifiers). */
-var CELL_TEXT_COLUMNS = [COL.serial, COL.barcode, COL.sorting, COL.localNumber, COL.visualStatus, COL.remarks];
+var CELL_TEXT_COLUMNS = [COL.serial, COL.barcode, COL.localNumber, COL.visualStatus, COL.remarks, COL.createdAt];
 
 /** Visual Inspection: the only allowed statuses. Every cell has exactly one; new cells start as Under Review. */
 var VISUAL_STATUSES = ['Good', 'Damaged', 'Under Review', 'Rejected'];

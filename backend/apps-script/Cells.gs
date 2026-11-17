@@ -111,7 +111,9 @@ function handleCreate(payload, body) {
 
     var serial = allocateSerial(state);
     var now = nowIso();
-    var cellValues = buildCellValues(serial, check.barcode, {});
+    // "Created At" (column M) is stamped here by the server clock, in IST, so it cannot be set or changed by the app.
+    // (CellMeta keeps the same instant as a UTC timestamp for the app.)
+    var cellValues = buildCellValues(serial, check.barcode, { createdAt: istFromMs(Date.parse(now)) });
     var metaValues = [
       String(serial),
       source === 'scan' ? payload.payload : '',

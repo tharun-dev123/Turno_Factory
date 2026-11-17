@@ -161,7 +161,7 @@ describe('permissions', () => {
     const attempts = [
       ['cells.create', { payload: 'VIEWER-NEW-1', source: 'scan' }],
       ['cells.update', { id: cell.id, expectedVersion: cell.version, patch: { cellWeightG: 99 } }],
-      ['cells.update', { id: cell.id, expectedVersion: cell.version, patch: { sortingGrade: 'A' } }],
+      ['cells.update', { id: cell.id, expectedVersion: cell.version, patch: { cellLocalNumber: 'A' } }],
       ['cells.delete', { id: cell.id }],
     ];
     for (const [action, payload] of attempts) {

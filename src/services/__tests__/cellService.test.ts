@@ -34,7 +34,7 @@ describe('cellService (mock data source)', () => {
     it('includes complete records, records with missing measurements, and varied statuses', async () => {
       const cells = await svc.listCells();
       expect(cells.some((c) => c.cellWeightG !== null && c.dcir90Mohm !== null)).toBe(true);
-      expect(cells.some((c) => c.cellWeightG === null && c.sortingGrade === null)).toBe(true);
+      expect(cells.some((c) => c.cellWeightG === null && c.cellLocalNumber === null)).toBe(true);
       expect(new Set(cells.map((c) => c.qcStatus)).size).toBeGreaterThan(1);
       expect(new Set(cells.map((c) => c.visualInspectionStatus)).size).toBeGreaterThan(1);
     });
@@ -125,11 +125,11 @@ describe('cellService (mock data source)', () => {
       const before = await svc.getCell('dummy-001');
       const after = await svc.updateCell('dummy-001', {
         cellWeightG: 3200.5,
-        sortingGrade: '  Grade B1 (Reduced)  ',
+        remarks: '  Checked by QA  ',
         cellLocalNumber: '',
       });
       expect(after.cellWeightG).toBe(3200.5);
-      expect(after.sortingGrade).toBe('Grade B1 (Reduced)');
+      expect(after.remarks).toBe('Checked by QA');
       expect(after.cellLocalNumber).toBeNull();
       expect(after.serialNumber).toBe(before.serialNumber);
       expect(after.batteryBarcode).toBe(before.batteryBarcode);

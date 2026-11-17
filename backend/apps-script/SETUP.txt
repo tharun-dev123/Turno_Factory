@@ -23,11 +23,13 @@ FILES (paste each into the Apps Script editor, in this folder: backend/apps-scri
 
 3. PREPARE THE SPREADSHEET
    - Spreadsheet "Turno_Factory_Demo" must contain the tab "BatteryCells" (empty, or already with the exact
-     13 headers in order: Serial Number | Battery Barcode | Sorting | Cell Weight | Cell Voltage | ACIR |
+     13 headers in order: Serial Number | Battery Barcode | Cell Weight | Cell Voltage | ACIR |
      Cell Local Number | 0.5C DCh capacities | DCIR @20% | DCIR @50% | DCIR @90% |
-     Visual Inspection Status | Remarks).
-     An EXISTING sheet that still has only the first 11 headers must be upgraded first: see
-     "UPGRADING AN EXISTING SHEET (Visual Inspection)" below.
+     Cell Status | Remarks | Created At).
+     "Created At" is filled in by the server when a cell is registered, in Indian Standard Time
+     (for example "2026-11-17 13:47:05 IST"). It is never edited. The app still receives UTC timestamps.
+     If the sheet still has the old "Sorting" column (C), delete that whole column first (right-click the
+     column letter -> Delete column), then run initializeBackend.
    - The script creates "CellMeta" and "AuditLog" itself. It NEVER overwrites a different existing layout:
      if the headers differ, initializeBackend stops with a message naming the sheet and column.
    - Do not share the spreadsheet publicly. Only the owning account (and admins) need access.
@@ -114,27 +116,16 @@ UPDATING THE CODE LATER
      Version: New version -> Deploy. The URL stays the same, so installed apps keep working.
    - "New deployment" creates a DIFFERENT URL and would require rebuilding the app.
 
-UPGRADING AN EXISTING SHEET (Visual Inspection)
-   Needed once, for a spreadsheet that was set up before the "Visual Inspection Status" (column L) and
-   "Remarks" (column M) columns existed. Until it is done, every request fails with a message saying column 12
-   of "BatteryCells" should be "Visual Inspection Status".
-   - Make a copy of the spreadsheet first (File -> Make a copy).
-   - Paste the updated .gs files into the Apps Script project, then Save.
-   - Select the function  migrateVisualInspection  and click Run.
-   - It adds the two headers, sets every existing cell to "Under Review", and adds a dropdown to column L
-     (Good, Damaged, Under Review, Rejected). It is safe to run again: it never overwrites a status that is
-     already set, and it stops without changes if columns L or M already contain other data.
-   - Deploy -> Manage deployments -> edit the existing deployment -> New version (keeps the same URL).
-   Rules enforced by the backend: only an Admin account can change the status or remarks (a Viewer gets
-   FORBIDDEN), new cells always start as "Under Review", and "Damaged" or "Rejected" needs Remarks
-   (up to 500 characters). Remarks are kept if the status later changes; clear them by sending empty Remarks.
+VISUAL INSPECTION RULES (enforced by the backend)
+   Only an Admin account can change Cell Status or Remarks (a Viewer gets FORBIDDEN). New cells
+   always start as "Under Review". "Damaged" or "Rejected" needs Remarks (up to 500 characters). Remarks are
+   kept if the status later changes; clear them by sending empty Remarks.
 
 ADMINISTRATOR FUNCTIONS (select in the editor, then Run)
    showStatus          Non-secret configuration summary in the log.
    signOutEveryone     Invalidates every phone's session immediately.
    rotateTokenSecret   New signing secret (also signs everyone out).
    clearLoginLockout   Lifts a lockout (any 5 failed logins lock sign-in for 15 minutes, for everyone).
-   migrateVisualInspection  One-time upgrade of an existing 11-column BatteryCells sheet (see above).
    repairIntegrity     Completes/rolls back an interrupted write and repairs BatteryCells <-> CellMeta mismatches.
    setupCredentials    Change the shared password: set ADMIN_USERNAME and ADMIN_PASSWORD again, run it
                        (this signs everyone out and deletes the temporary properties). TYPE the password into

@@ -67,21 +67,21 @@ describe('Edit Cell screen', () => {
     it('shows the current status and an optional remarks box for an Under Review cell', async () => {
       testGlobals.__routeParams = { id: 'dummy-013' }; // seeded as Under Review
       await renderScreen(<EditCellScreen />);
-      expect(await screen.findByLabelText('Visual Inspection Status: Under Review')).toBeTruthy();
+      expect(await screen.findByLabelText('Cell Status: Under Review')).toBeTruthy();
       expect(screen.getByText('Remarks')).toBeTruthy();
       expect(screen.queryByText('Remarks (required)')).toBeNull();
     });
 
     it('offers exactly the four statuses and no "Not set" option', async () => {
       await renderScreen(<EditCellScreen />);
-      await fireEvent.press(await screen.findByLabelText('Visual Inspection Status: Good'));
+      await fireEvent.press(await screen.findByLabelText('Cell Status: Good'));
       for (const status of ['Good', 'Damaged', 'Under Review', 'Rejected']) expect(screen.getAllByText(status).length).toBeGreaterThan(0);
       expect(screen.queryByText('Not set')).toBeNull();
     });
 
     it('requires remarks for Damaged: shows an inline error and saves nothing', async () => {
       await renderScreen(<EditCellScreen />);
-      await fireEvent.press(await screen.findByLabelText('Visual Inspection Status: Good'));
+      await fireEvent.press(await screen.findByLabelText('Cell Status: Good'));
       await fireEvent.press(screen.getByText('Damaged'));
       expect(await screen.findByText('Remarks (required)')).toBeTruthy();
       await fireEvent.press(screen.getByLabelText('Save Changes'));
@@ -92,7 +92,7 @@ describe('Edit Cell screen', () => {
 
     it('saves Rejected with remarks', async () => {
       await renderScreen(<EditCellScreen />);
-      await fireEvent.press(await screen.findByLabelText('Visual Inspection Status: Good'));
+      await fireEvent.press(await screen.findByLabelText('Cell Status: Good'));
       await fireEvent.press(screen.getByText('Rejected'));
       await fireEvent.changeText(screen.getByLabelText('Remarks'), '  Swollen cell  ');
       await fireEvent.press(screen.getByLabelText('Save Changes'));

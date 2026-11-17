@@ -17,7 +17,6 @@ describe('Cell Details screen', () => {
     await renderScreen(<CellDetailsScreen />);
     expect(await screen.findByText('Cell Details')).toBeTruthy();
     expect(screen.getAllByText('02KCBE516100DHG702113060').length).toBeGreaterThan(0);
-    expect(screen.getByText('Grade A1 (Standard) - High Precision')).toBeTruthy();
     expect(screen.getByText('3120.4')).toBeTruthy();
     // Development-validated records must not be shown as production-verified.
     expect(screen.getByText('Dev validated')).toBeTruthy();

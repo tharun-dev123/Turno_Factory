@@ -321,7 +321,6 @@ export async function deleteCell(id: string): Promise<void> {
 /** Trim text fields and convert empty strings to null; leave numbers untouched. */
 function normalizeFields(fields: Partial<EditableCellFields>): Partial<EditableCellFields> {
   const result: Partial<EditableCellFields> = { ...fields };
-  if ('sortingGrade' in fields) result.sortingGrade = normalizeText(fields.sortingGrade);
   if ('cellLocalNumber' in fields) result.cellLocalNumber = normalizeText(fields.cellLocalNumber);
   if ('remarks' in fields) result.remarks = normalizeText(fields.remarks);
   return result;

@@ -1,7 +1,9 @@
 const { createBackend } = require('../testkit/harness');
 
-const NINE_EMPTY = {
-  sortingGrade: null,
+// "Created At" is stamped by the server clock, in IST; tests only check its shape unless they say otherwise.
+const ISO = expect.stringMatching(/^\d{4}-\d\d-\d\d \d\d:\d\d:\d\d IST$/);
+
+const EMPTY_FIELDS = {
   cellWeightG: null,
   cellVoltageV: null,
   acirMohm: null,
@@ -27,7 +29,6 @@ describe('sheet layout', () => {
     expect(header(b.sheets.cells, 13)).toEqual([
       'Serial Number',
       'Battery Barcode',
-      'Sorting',
       'Cell Weight',
       'Cell Voltage',
       'ACIR',
@@ -36,8 +37,9 @@ describe('sheet layout', () => {
       'DCIR @20%',
       'DCIR @50%',
       'DCIR @90%',
-      'Visual Inspection Status',
+      'Cell Status',
       'Remarks',
+      'Created At',
     ]);
     expect(header(b.sheets.meta, 11)).toEqual([
       'Serial Number',
@@ -60,19 +62,19 @@ describe('sheet layout', () => {
     b.ctx.initializeBackend();
     b.ctx.initializeBackend();
     const cells = b.sheets.cells;
-    for (const col of [1, 2, 3, 7]) expect(cells.formats.get(`5,${col}`)).toBe('@'); // A, B, C, G
-    for (const col of [4, 5, 6, 8, 9, 10, 11]) expect(cells.formats.get(`5,${col}`)).toBeUndefined(); // measurements stay numeric
+    for (const col of [1, 2, 6, 11, 12, 13]) expect(cells.formats.get(`5,${col}`)).toBe('@'); // A, B, F (local number), K, L, M
+    for (const col of [3, 4, 5, 7, 8, 9, 10]) expect(cells.formats.get(`5,${col}`)).toBeUndefined(); // measurements stay numeric
     expect(cells.protections).toHaveLength(1);
     expect(cells.frozenRows).toBe(1);
   });
 
   it('refuses to overwrite a different existing layout and flags it at runtime', () => {
     const b = createBackend();
-    b.sheets.cells.values.set('1,3', 'Cell Weight'); // swapped column C and D
-    b.sheets.cells.values.set('1,4', 'Sorting');
-    expect(() => b.ctx.initializeBackend()).toThrow(/Sorting|Cell Weight/);
+    b.sheets.cells.values.set('1,3', 'Cell Voltage'); // swapped column C and D
+    b.sheets.cells.values.set('1,4', 'Cell Weight');
+    expect(() => b.ctx.initializeBackend()).toThrow(/Cell Weight|Cell Voltage/);
     const res = b.call('cells.list');
-    expect(res).toMatchObject({ ok: false, error: { code: 'INTERNAL', details: { sheet: 'BatteryCells', column: 3, expected: 'Sorting', found: 'Cell Weight' } } });
+    expect(res).toMatchObject({ ok: false, error: { code: 'INTERNAL', details: { sheet: 'BatteryCells', column: 3, expected: 'Cell Weight', found: 'Cell Voltage' } } });
   });
 
   it('reports a missing tab', () => {
@@ -83,7 +85,7 @@ describe('sheet layout', () => {
 });
 
 describe('cells.create', () => {
-  it('populates only Serial Number and Battery Barcode; the other nine fields stay empty', () => {
+  it('populates only Serial Number and Battery Barcode; the other fields stay empty', () => {
     const b = createBackend();
     const res = b.create('  ABC-123 ');
     expect(res.ok).toBe(true);
@@ -96,11 +98,11 @@ describe('cells.create', () => {
       validationMode: 'pilot',
       validationStatus: 'UNVERIFIED',
       version: 1,
-      ...NINE_EMPTY,
+      ...EMPTY_FIELDS,
     });
 
     const [row] = b.sheets.cells.dump();
-    expect(row).toEqual(['1', 'ABC-123', '', '', '', '', '', '', '', '', '', 'Under Review', '']);
+    expect(row).toEqual(['1', 'ABC-123', '', '', '', '', '', '', '', '', 'Under Review', '', ISO]);
   });
 
   it('writes CellMeta (raw payload, mode, status, version) and an AuditLog CREATE row', () => {
@@ -263,11 +265,11 @@ describe('literal text safety (Google Sheets may reinterpret text)', () => {
   it('applies to edits too: a text field cannot smuggle a formula into the sheet', () => {
     const b = createBackend();
     b.create('EDIT-1');
-    const res = b.call('cells.update', { id: '1', expectedVersion: 1, patch: { sortingGrade: '=HYPERLINK("x")', cellLocalNumber: '+5' } }, { requestId: b.nextId() });
+    const res = b.call('cells.update', { id: '1', expectedVersion: 1, patch: { cellLocalNumber: '=HYPERLINK("x")', remarks: '+5' } }, { requestId: b.nextId() });
     expect(res.ok).toBe(true);
     const [row] = b.sheets.cells.dump();
-    expect(row[2]).toBe('=HYPERLINK("x")');
-    expect(row[6]).toBe('+5');
+    expect(row[5]).toBe('=HYPERLINK("x")');
+    expect(row[11]).toBe('+5');
   });
 });
 
@@ -444,11 +446,10 @@ describe('idempotency (requestId)', () => {
 });
 
 describe('cells.update', () => {
-  it('maps every editable field to the correct column (A..K, L..M) and stores numbers as numbers', () => {
+  it('maps every editable field to the correct column (A..J, K..L) and stores numbers as numbers', () => {
     const b = createBackend();
     b.create('MAP-1');
     const res = update(b, '1', 1, {
-      sortingGrade: 'Grade A1',
       cellWeightG: 3120.4,
       cellVoltageV: 3.652,
       acirMohm: 0.42,
@@ -461,13 +462,12 @@ describe('cells.update', () => {
     expect(res.ok).toBe(true);
 
     const [row] = b.sheets.cells.dump();
-    // A Serial, B Barcode, C Sorting, D Weight, E Voltage, F ACIR, G Local number, H 0.5C, I/J/K DCIR
-    expect(row).toEqual(['1', 'MAP-1', 'Grade A1', 3120.4, 3.652, 0.42, '007', 50.2, 0.68, 0.65, 0.63, 'Under Review', '']);
-    expect(typeof row[3]).toBe('number');
-    expect(typeof row[6]).toBe('string'); // identifier kept as text ('007', not 7)
+    // A Serial, B Barcode, C Weight, D Voltage, E ACIR, F Local number, G 0.5C, H/I/J DCIR, K Status, L Remarks
+    expect(row).toEqual(['1', 'MAP-1', 3120.4, 3.652, 0.42, '007', 50.2, 0.68, 0.65, 0.63, 'Under Review', '', ISO]);
+    expect(typeof row[2]).toBe('number');
+    expect(typeof row[5]).toBe('string'); // identifier kept as text ('007', not 7)
 
     expect(res.data.cell).toMatchObject({
-      sortingGrade: 'Grade A1',
       cellWeightG: 3120.4,
       cellVoltageV: 3.652,
       acirMohm: 0.42,
@@ -498,10 +498,10 @@ describe('cells.update', () => {
   it('clears fields with null or empty text, and trims text', () => {
     const b = createBackend();
     b.create('UPD-2');
-    update(b, '1', 1, { cellWeightG: 9, sortingGrade: '  A1  ', cellLocalNumber: 'L4' });
-    const res = update(b, '1', 2, { cellWeightG: null, sortingGrade: '   ', cellLocalNumber: null });
-    expect(res.data.cell).toMatchObject({ cellWeightG: null, sortingGrade: null, cellLocalNumber: null });
-    expect(b.sheets.cells.dump()[0]).toEqual(['1', 'UPD-2', '', '', '', '', '', '', '', '', '', 'Under Review', '']);
+    update(b, '1', 1, { cellWeightG: 9, remarks: '  A1  ', cellLocalNumber: 'L4' });
+    const res = update(b, '1', 2, { cellWeightG: null, remarks: '   ', cellLocalNumber: null });
+    expect(res.data.cell).toMatchObject({ cellWeightG: null, remarks: null, cellLocalNumber: null });
+    expect(b.sheets.cells.dump()[0]).toEqual(['1', 'UPD-2', '', '', '', '', '', '', '', '', 'Under Review', '', ISO]);
   });
 
   it('rejects invalid values and unknown fields without changing anything', () => {
@@ -513,7 +513,7 @@ describe('cells.update', () => {
       // NaN / Infinity cannot occur here: JSON.stringify turns them into null (the client rejects them first).
       [{ acirMohm: true }, 'acirMohm'],
       [{ dcir20Mohm: {} }, 'dcir20Mohm'],
-      [{ sortingGrade: 5 }, 'sortingGrade'],
+      [{ sortingGrade: 'A1' }, 'sortingGrade'], // the Sorting column was removed
       [{ cellLocalNumber: 'x'.repeat(65) }, 'cellLocalNumber'],
       [{ cellLocalNumber: 'a\u0000b' }, 'cellLocalNumber'],
       [{ batteryBarcode: 'HACK' }, 'batteryBarcode'],
@@ -523,7 +523,7 @@ describe('cells.update', () => {
       const res = update(b, '1', 1, patch);
       expect(res).toMatchObject({ ok: false, error: { code: 'VALIDATION', details: { fieldErrors: { [field]: expect.any(String) } } } });
     }
-    expect(b.sheets.cells.dump()[0]).toEqual(['1', 'UPD-3', '', '', '', '', '', '', '', '', '', 'Under Review', '']);
+    expect(b.sheets.cells.dump()[0]).toEqual(['1', 'UPD-3', '', '', '', '', '', '', '', '', 'Under Review', '', ISO]);
     expect(b.sheets.meta.dump()[0][10]).toBe(1);
   });
 
@@ -546,8 +546,8 @@ describe('cells.update', () => {
       ok: false,
       error: { code: 'CONFLICT', details: { currentVersion: 2, current: { cellWeightG: 111, version: 2 } } },
     });
-    expect(b.sheets.cells.dump()[0][3]).toBe(111); // A's change survived
-    expect(b.sheets.cells.dump()[0][4]).toBe(''); // B's change was not applied
+    expect(b.sheets.cells.dump()[0][2]).toBe(111); // A's change survived
+    expect(b.sheets.cells.dump()[0][3]).toBe(''); // B's change was not applied
     // B reloads (version 2) and succeeds.
     expect(update(b, '1', 2, { cellVoltageV: 3.3 }).ok).toBe(true);
   });

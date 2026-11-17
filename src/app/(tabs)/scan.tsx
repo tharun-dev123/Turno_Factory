@@ -1,5 +1,5 @@
 import { CameraView, useCameraPermissions } from 'expo-camera';
-import { useFocusEffect } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
@@ -71,6 +71,19 @@ function ScannerScreen() {
     feedback,
     onRegistered,
   });
+
+  // After a cell is registered (scanned or typed), open its Edit Cell page so the operator can enter the cell info
+  // straight away. The result card is cleared first: it would otherwise still be on screen, with the scanner
+  // paused, when the operator comes back. Back, Cancel and Save all return here, ready for the next scan.
+  const router = useRouter();
+  const openedFor = useRef<string | null>(null);
+  useEffect(() => {
+    if (result?.kind !== 'success') return;
+    if (openedFor.current === result.cell.id) return;
+    openedFor.current = result.cell.id;
+    dismissResult();
+    router.push({ pathname: '/cell/edit/[id]', params: { id: result.cell.id } });
+  }, [result, dismissResult, router]);
 
   // Only run the camera while this tab is visible; refresh today's count on each visit.
   useFocusEffect(

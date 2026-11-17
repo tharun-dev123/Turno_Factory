@@ -11,7 +11,6 @@ const dto = (overrides: Partial<ApiCell> = {}): ApiCell => ({
   rawPayload: ' ABC-7 ',
   validationMode: 'pilot',
   validationStatus: 'UNVERIFIED',
-  sortingGrade: null,
   cellWeightG: null,
   cellVoltageV: null,
   acirMohm: null,
@@ -38,7 +37,7 @@ function fakeClient(result: unknown = {}) {
 
 describe('API cell repository', () => {
   it('maps backend cells to the app model (pilot records are never "production")', async () => {
-    const { client } = fakeClient({ cells: [dto(), dto({ id: '8', serialNumber: 8, rawPayload: '', sortingGrade: 'A1', cellWeightG: 3120.4 })] });
+    const { client } = fakeClient({ cells: [dto(), dto({ id: '8', serialNumber: 8, rawPayload: '', cellLocalNumber: 'L4-1', cellWeightG: 3120.4 })] });
     const [first, second] = await createApiCellRepository(client).list();
     expect(first).toMatchObject({
       id: '7',
@@ -51,7 +50,7 @@ describe('API cell repository', () => {
       visualInspectionStatus: 'Under Review', remarks: null,
       version: 3,
     });
-    expect(second).toMatchObject({ rawPayload: null, sortingGrade: 'A1', cellWeightG: 3120.4 });
+    expect(second).toMatchObject({ rawPayload: null, cellLocalNumber: 'L4-1', cellWeightG: 3120.4 });
   });
 
   it('maps the visual inspection fields and falls back to "Under Review" for a missing or unknown status', async () => {
@@ -128,10 +127,10 @@ describe('API cell repository', () => {
 
   it('sends only the edited fields plus expectedVersion', async () => {
     const { client, call } = fakeClient({ cell: dto({ version: 4 }) });
-    await createApiCellRepository(client).update('7', { cellWeightG: 3120.4, sortingGrade: null, expectedVersion: 3, requestId: 'req-upd-1' });
+    await createApiCellRepository(client).update('7', { cellWeightG: 3120.4, cellLocalNumber: null, expectedVersion: 3, requestId: 'req-upd-1' });
     expect(call).toHaveBeenCalledWith(
       'cells.update',
-      { id: '7', expectedVersion: 3, patch: { cellWeightG: 3120.4, sortingGrade: null } },
+      { id: '7', expectedVersion: 3, patch: { cellWeightG: 3120.4, cellLocalNumber: null } },
       { kind: 'write', requestId: 'req-upd-1' },
     );
   });

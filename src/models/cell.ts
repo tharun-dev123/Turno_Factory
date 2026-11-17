@@ -22,8 +22,6 @@ export const MAX_REMARKS_LENGTH = 500;
 
 /** Fields the operator may edit on an existing cell (Edit Cell screen). */
 export interface EditableCellFields {
-  /** 电池档位 / Sorting grade */
-  sortingGrade: string | null;
   /** Tray position, e.g. `L4-CELL-088` */
   cellLocalNumber: string | null;
   /** Grams */

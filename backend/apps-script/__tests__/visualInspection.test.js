@@ -17,7 +17,7 @@ describe('visual inspection: defaults', () => {
     const b = createBackend();
     const cell = seed(b);
     expect(cell).toMatchObject({ visualInspectionStatus: 'Under Review', remarks: null });
-    expect(b.sheets.cells.dump()[0].slice(11)).toEqual(['Under Review', '']);
+    expect(b.sheets.cells.dump()[0].slice(10, 12)).toEqual(['Under Review', '']);
   });
 
   it('does not let the create call choose a status or remarks', () => {
@@ -29,9 +29,9 @@ describe('visual inspection: defaults', () => {
   it('reads a blank or unrecognised sheet value as "Under Review"', () => {
     const b = createBackend();
     const cell = seed(b);
-    b.sheets.cells.values.set('2,12', '');
+    b.sheets.cells.values.set('2,11', '');
     expect(b.call('cells.get', { id: cell.id }).data.cell.visualInspectionStatus).toBe('Under Review');
-    b.sheets.cells.values.set('2,12', 'Maybe');
+    b.sheets.cells.values.set('2,11', 'Maybe');
     expect(b.call('cells.get', { id: cell.id }).data.cell.visualInspectionStatus).toBe('Under Review');
   });
 });
@@ -51,7 +51,7 @@ describe('visual inspection: status', () => {
     const res = update(b, cell.id, 1, { visualInspectionStatus: status, remarks: '  Dent on the side  ' });
     expect(res.ok).toBe(true);
     expect(res.data.cell).toMatchObject({ visualInspectionStatus: status, remarks: 'Dent on the side' });
-    expect(b.sheets.cells.dump()[0].slice(11)).toEqual([status, 'Dent on the side']);
+    expect(b.sheets.cells.dump()[0].slice(10, 12)).toEqual([status, 'Dent on the side']);
   });
 
   it.each(['Damaged', 'Rejected'])('rejects "%s" without remarks and changes nothing', (status) => {
@@ -61,7 +61,7 @@ describe('visual inspection: status', () => {
       const res = update(b, cell.id, 1, patch);
       expect(res).toMatchObject({ ok: false, error: { code: 'VALIDATION', details: { fieldErrors: { remarks: expect.any(String) } } } });
     }
-    expect(b.sheets.cells.dump()[0].slice(11)).toEqual(['Under Review', '']);
+    expect(b.sheets.cells.dump()[0].slice(10, 12)).toEqual(['Under Review', '']);
     expect(b.sheets.meta.dump()[0][10]).toBe(1);
   });
 
@@ -72,7 +72,7 @@ describe('visual inspection: status', () => {
       const res = update(b, cell.id, 1, { visualInspectionStatus: value });
       expect(res).toMatchObject({ ok: false, error: { code: 'VALIDATION', details: { fieldErrors: { visualInspectionStatus: expect.any(String) } } } });
     }
-    expect(b.sheets.cells.dump()[0][11]).toBe('Under Review');
+    expect(b.sheets.cells.dump()[0][10]).toBe('Under Review');
   });
 });
 
@@ -99,7 +99,7 @@ describe('visual inspection: remarks', () => {
   it('applies the rule to an unrelated edit of a cell that is already Damaged without remarks', () => {
     const b = createBackend();
     const cell = seed(b);
-    b.sheets.cells.values.set('2,12', 'Damaged'); // set directly in the sheet, bypassing the API
+    b.sheets.cells.values.set('2,11', 'Damaged'); // set directly in the sheet, bypassing the API
     const res = update(b, cell.id, 1, { cellWeightG: 100 });
     expect(res).toMatchObject({ ok: false, error: { code: 'VALIDATION' } });
   });
@@ -158,51 +158,19 @@ describe('visual inspection: audit and permissions', () => {
   });
 });
 
-describe('visual inspection: sheet setup and migration', () => {
-  it('adds a dropdown that only allows the four statuses to column L', () => {
+describe('visual inspection: sheet setup', () => {
+  it('adds a dropdown that only allows the four statuses to column K', () => {
     const b = createBackend();
-    const v = b.sheets.cells.validations.find((x) => x.col === 12);
+    const v = b.sheets.cells.validations.find((x) => x.col === 11);
     expect(v).toBeDefined();
     expect(v.rule).toMatchObject({ values: ['Good', 'Damaged', 'Under Review', 'Rejected'], dropdown: true, allowInvalid: false });
   });
 
-  it('upgrades an existing 11-column sheet: adds headers, backfills "Under Review", keeps data, and is re-runnable', () => {
-    const b = createBackend();
-    const cell = seed(b, 'LEGACY-1');
-    update(b, cell.id, 1, { cellWeightG: 12.5, sortingGrade: 'A1' });
-    seed(b, 'LEGACY-2');
-
-    // Turn the sheet back into the original 11-column layout.
-    const sheet = b.sheets.cells;
-    for (const key of ['1,12', '1,13', '2,12', '2,13', '3,12', '3,13']) sheet.values.delete(key);
-
-    b.ctx.migrateVisualInspection();
-    expect([sheet._get(1, 12), sheet._get(1, 13)]).toEqual(['Visual Inspection Status', 'Remarks']);
-    expect(sheet.dump().map((r) => r[11])).toEqual(['Under Review', 'Under Review']);
-    expect(sheet.dump()[0].slice(0, 4)).toEqual(['1', 'LEGACY-1', 'A1', 12.5]);
-
-    // A status chosen after the migration is never overwritten by a second run.
-    update(b, cell.id, 2, { visualInspectionStatus: 'Good' });
-    b.ctx.migrateVisualInspection();
-    expect(sheet.dump().map((r) => r[11])).toEqual(['Good', 'Under Review']);
-  });
-
-  it('refuses to touch a sheet whose original columns were changed, or whose L/M already hold other data', () => {
-    const b = createBackend();
-    seed(b, 'LEGACY-3');
-    b.sheets.cells.values.set('1,12', 'Something else');
-    expect(() => b.ctx.migrateVisualInspection()).toThrow(/already contain other data/);
-
-    b.sheets.cells.values.set('1,12', '');
-    b.sheets.cells.values.set('1,3', 'Wrong header');
-    expect(() => b.ctx.migrateVisualInspection()).toThrow();
-  });
-
   it('reports a clear schema error (instead of corrupting data) when an old sheet has not been migrated yet', () => {
     const b = createBackend();
+    b.sheets.cells.values.delete('1,11');
     b.sheets.cells.values.delete('1,12');
-    b.sheets.cells.values.delete('1,13');
     const res = b.call('cells.list');
-    expect(res).toMatchObject({ ok: false, error: { code: 'INTERNAL', details: { sheet: 'BatteryCells', column: 12 } } });
+    expect(res).toMatchObject({ ok: false, error: { code: 'INTERNAL', details: { sheet: 'BatteryCells', column: 11 } } });
   });
 });

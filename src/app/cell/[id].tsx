@@ -153,11 +153,6 @@ export default function CellDetailsScreen() {
                   )
                 }
               />
-              <DetailRow
-                icon="military-tech"
-                label="Sorting grade"
-                value={cell.sortingGrade ? <Pill label={cell.sortingGrade} icon="verified" tone="success" /> : <AppText variant="bodySm" color={colors.slate400} style={{ fontFamily: 'Manrope_600SemiBold' }}>Not recorded</AppText>}
-              />
               <DetailRow icon="scale" label="Cell Weight" value={<MeasurementValue value={cell.cellWeightG} unit="g" />} />
               <DetailRow icon="bolt" label="Cell Voltage (OCV)" value={<MeasurementValue value={cell.cellVoltageV} unit="V" />} />
               <DetailRow icon="graphic-eq" label="ACIR (1kHz)" value={<MeasurementValue value={cell.acirMohm} unit="mΩ" />} />

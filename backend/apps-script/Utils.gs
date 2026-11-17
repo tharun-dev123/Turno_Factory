@@ -21,6 +21,15 @@ function nowIso() {
   return isoFromMs(nowMs());
 }
 
+/**
+ * Formats a time as Indian Standard Time for people reading the sheet, e.g. "2026-11-17 13:47:05 IST".
+ * IST is a fixed UTC+05:30 (India has no daylight saving), so no time zone database is needed.
+ */
+function istFromMs(ms) {
+  var shifted = new Date(ms + (5 * 60 + 30) * 60 * 1000).toISOString(); // 2026-11-17T13:47:05.223Z
+  return shifted.slice(0, 10) + ' ' + shifted.slice(11, 19) + ' IST';
+}
+
 // ---------------------------------------------------------------------------------------------
 // Errors. Codes: DUPLICATE_BARCODE, VALIDATION, NOT_FOUND, AUTH, FORBIDDEN, CONFLICT, BUSY, INTERNAL
 // ---------------------------------------------------------------------------------------------

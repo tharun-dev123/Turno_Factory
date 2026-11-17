@@ -22,12 +22,11 @@ export const NUMERIC_FIELDS: readonly EditableFieldKey[] = [
   'dcir90Mohm',
 ];
 
-export const TEXT_FIELDS: readonly EditableFieldKey[] = ['sortingGrade', 'cellLocalNumber'];
+export const TEXT_FIELDS: readonly EditableFieldKey[] = ['cellLocalNumber'];
 
 const MAX_TEXT_LENGTH = 64;
 
 export const FIELD_LABELS: Record<EditableFieldKey, string> = {
-  sortingGrade: 'Sorting grade',
   cellLocalNumber: 'Cell local number',
   cellWeightG: 'Cell weight',
   cellVoltageV: 'Cell voltage',

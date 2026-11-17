@@ -84,15 +84,15 @@ describe('update: partial-write handling', () => {
   it('restores the previous values and version when the audit write fails', () => {
     const b = createBackend();
     b.create('UP-1');
-    update(b, '1', 1, { cellWeightG: 10, sortingGrade: 'A' });
+    update(b, '1', 1, { cellWeightG: 10, remarks: 'A' });
     const before = JSON.stringify([b.sheets.cells.dump(), b.sheets.meta.dump()]);
 
     b.sheets.audit.failNext('setValues', { when: isAuditWrite('UPDATE') });
-    const res = update(b, '1', 2, { cellWeightG: 99, sortingGrade: 'Z' });
+    const res = update(b, '1', 2, { cellWeightG: 99, remarks: 'Z' });
     expect(res).toMatchObject({ ok: false, error: { code: 'INTERNAL', details: { recovery: 'ROLLED_BACK' } } });
 
     expect(JSON.stringify([b.sheets.cells.dump(), b.sheets.meta.dump()])).toBe(before);
-    expect(b.call('cells.get', { id: '1' }).data.cell).toMatchObject({ cellWeightG: 10, sortingGrade: 'A', version: 2 });
+    expect(b.call('cells.get', { id: '1' }).data.cell).toMatchObject({ cellWeightG: 10, remarks: 'A', version: 2 });
     expect(b.props.getProperty('JOURNAL')).toBeNull();
   });
 
@@ -102,7 +102,7 @@ describe('update: partial-write handling', () => {
     b.sheets.meta.failNext('setValues');
     const res = update(b, '1', 1, { cellWeightG: 5 });
     expect(res.ok).toBe(false);
-    expect(b.sheets.cells.dump()[0][3]).toBe('');
+    expect(b.sheets.cells.dump()[0][2]).toBe('');
     expect(b.call('cells.get', { id: '1' }).data.cell.version).toBe(1);
   });
 
@@ -112,12 +112,12 @@ describe('update: partial-write handling', () => {
     const cellsRow = b.sheets.cells.dump()[0];
     const metaRow = b.sheets.meta.dump()[0];
     // Simulate a crash mid-update: new values written, no audit row, journal still present.
-    b.sheets.cells.values.set('2,4', 777);
+    b.sheets.cells.values.set('2,3', 777);
     b.sheets.meta.values.set('2,11', 2);
     b.props.setProperty('JOURNAL', JSON.stringify({ requestId: 'crashed-update-1', action: 'UPDATE', serial: '1', beforeCellsRow: cellsRow, beforeMetaRow: metaRow }));
 
     expect(b.create('TRIGGER-RECOVERY').ok).toBe(true);
-    expect(b.sheets.cells.dump()[0][3]).toBe('');
+    expect(b.sheets.cells.dump()[0][2]).toBe('');
     expect(b.sheets.meta.dump()[0][10]).toBe(1);
     expect(auditActions(b)).toContain('RECOVERY_ROLLBACK_UPDATE');
   });
@@ -202,8 +202,8 @@ describe('manual edits made directly in the sheet', () => {
   it('numbers typed into measurement columns are read back as numbers, text is ignored', () => {
     const b = createBackend();
     b.create('MAN-1');
-    b.sheets.cells.values.set('2,4', 3120.5); // D Cell Weight typed by an admin
-    b.sheets.cells.values.set('2,5', 'not a number'); // E Cell Voltage typed wrongly
+    b.sheets.cells.values.set('2,3', 3120.5); // C Cell Weight typed by an admin
+    b.sheets.cells.values.set('2,4', 'not a number'); // D Cell Voltage typed wrongly
     const cell = b.call('cells.get', { id: '1' }).data.cell;
     expect(cell.cellWeightG).toBe(3120.5);
     expect(cell.cellVoltageV).toBeNull();

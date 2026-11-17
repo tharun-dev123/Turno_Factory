@@ -17,7 +17,6 @@ import { SelectField } from '@/components/ui/SelectField';
 import { LoadingState, MessageState } from '@/components/ui/StateViews';
 import { TextField } from '@/components/ui/TextField';
 import { useToast } from '@/components/ui/Toast';
-import { appConfig } from '@/config/appConfig';
 import { useAuth } from '@/context/AuthContext';
 import { useCell } from '@/hooks/useCell';
 import { useCellForm, type CellFormValues } from '@/hooks/useCellForm';
@@ -194,15 +193,6 @@ function EditForm({ cell, latestVersion }: { cell: CellRecord; latestVersion: nu
               right={<Icon name="grid-view" size={20} color={colors.slate400} />}
             />
 
-            <SelectField
-              label="Sorting Grade"
-              value={values.sortingGrade}
-              options={appConfig.sortingGrades}
-              placeholder="Not set"
-              error={errors.sortingGrade}
-              onChange={(grade) => setField('sortingGrade', grade)}
-            />
-
             <MeasurementField label="Cell Weight" unit="g" field="cellWeightG" values={values} errors={errors} setField={setField} />
             <MeasurementField label="Cell Voltage (OCV)" unit="V" field="cellVoltageV" values={values} errors={errors} setField={setField} />
             <MeasurementField label="ACIR (1kHz)" unit="mΩ" field="acirMohm" values={values} errors={errors} setField={setField} />
@@ -216,7 +206,7 @@ function EditForm({ cell, latestVersion }: { cell: CellRecord; latestVersion: nu
         <DetailSection title="Visual Inspection">
           <View style={{ padding: 16, gap: 14 }}>
             <SelectField
-              label="Visual Inspection Status"
+              label="Cell Status"
               value={values.visualInspectionStatus}
               options={VISUAL_INSPECTION_STATUSES}
               allowClear={false}

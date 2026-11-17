@@ -134,7 +134,6 @@ function composeCell(cellValues, metaValues) {
     rawPayload: m.length ? String(m[META_COL.rawPayload]) : '',
     validationMode: m.length ? String(m[META_COL.validationMode]) : '',
     validationStatus: m.length ? String(m[META_COL.validationStatus]) : 'UNVERIFIED',
-    sortingGrade: emptyToNull(cellValues[COL.sorting]) === null ? null : String(cellValues[COL.sorting]),
     cellWeightG: toNumberOrNull(cellValues[COL.weight]),
     cellVoltageV: toNumberOrNull(cellValues[COL.voltage]),
     acirMohm: toNumberOrNull(cellValues[COL.acir]),
@@ -219,9 +218,8 @@ function writeRowVerified(sheet, rowNumber, values) {
 function writeCellsRow(store, rowNumber, values) {
   var sheet = store.cells;
   sheet.getRange(rowNumber, COL.serial + 1, 1, 2).setNumberFormat('@'); // A:B
-  sheet.getRange(rowNumber, COL.sorting + 1, 1, 1).setNumberFormat('@'); // C
-  sheet.getRange(rowNumber, COL.localNumber + 1, 1, 1).setNumberFormat('@'); // G
-  sheet.getRange(rowNumber, COL.visualStatus + 1, 1, 2).setNumberFormat('@'); // L:M
+  sheet.getRange(rowNumber, COL.localNumber + 1, 1, 1).setNumberFormat('@'); // F
+  sheet.getRange(rowNumber, COL.visualStatus + 1, 1, 3).setNumberFormat('@'); // K:M
   writeRowVerified(sheet, rowNumber, values);
 }
 
@@ -237,10 +235,10 @@ function buildCellValues(serial, barcode, fields) {
   for (var i = 0; i < CELL_HEADERS.length; i++) row.push('');
   row[COL.serial] = String(serial);
   row[COL.barcode] = barcode;
-  row[COL.sorting] = f.sortingGrade === undefined || f.sortingGrade === null ? '' : String(f.sortingGrade);
   row[COL.localNumber] = f.cellLocalNumber === undefined || f.cellLocalNumber === null ? '' : String(f.cellLocalNumber);
   row[COL.visualStatus] = f.visualInspectionStatus === undefined || f.visualInspectionStatus === null ? DEFAULT_VISUAL_STATUS : String(f.visualInspectionStatus);
   row[COL.remarks] = f.remarks === undefined || f.remarks === null ? '' : String(f.remarks);
+  row[COL.createdAt] = f.createdAt === undefined || f.createdAt === null ? '' : String(f.createdAt);
   for (var n = 0; n < NUMERIC_FIELDS.length; n++) {
     var v = f[NUMERIC_FIELDS[n].key];
     row[NUMERIC_FIELDS[n].col] = typeof v === 'number' && isFinite(v) ? v : '';
@@ -480,58 +478,11 @@ function initializeBackend() {
   console.log('Backend initialized. Validation mode: ' + getValidationMode() + '. Credentials configured: ' + (props.getProperty(PROP.authPasswordRecord) ? 'yes' : 'NO (run setupCredentials)'));
 }
 
-/** Restricts column L (Visual Inspection Status) to the four allowed values, as a dropdown. Safe to re-run. */
+/** Restricts column L (Cell Status) to the four allowed values, as a dropdown. Safe to re-run. */
 function applyVisualStatusDropdown(sheet) {
   var rows = Math.max(sheet.getMaxRows() - 1, 1);
   var rule = SpreadsheetApp.newDataValidation().requireValueInList(VISUAL_STATUSES, true).setAllowInvalid(false).build();
   sheet.getRange(2, COL.visualStatus + 1, rows, 1).setDataValidation(rule);
-}
-
-/**
- * One-time upgrade of an EXISTING sheet that has the original 11 BatteryCells columns. Back up the spreadsheet
- * first. Adds the "Visual Inspection Status" (L) and "Remarks" (M) headers, sets every existing cell to
- * "Under Review", and adds the dropdown. Safe to re-run: it refuses to touch a different layout and never
- * overwrites a status that is already set.
- */
-function migrateVisualInspection() {
-  var id = getProp(PROP.spreadsheetId);
-  if (!id) throw new Error('Set the Script Property SPREADSHEET_ID first.');
-  var sheet = SpreadsheetApp.openById(id).getSheetByName(SHEET_NAMES.cells);
-  if (!sheet) throw new Error('Sheet "' + SHEET_NAMES.cells + '" was not found. Run initializeBackend first.');
-
-  withScriptLock(function () {
-    assertHeaders(sheet, CELL_HEADERS.slice(0, COL.visualStatus), SHEET_NAMES.cells); // the original 11 must be intact
-    var extra = sheet.getRange(1, COL.visualStatus + 1, 1, 2).getValues()[0].map(function (v) {
-      return String(v).replace(/^\s+|\s+$/g, '');
-    });
-    var expectedExtra = CELL_HEADERS.slice(COL.visualStatus);
-    var alreadyDone = extra[0] === expectedExtra[0] && extra[1] === expectedExtra[1];
-    if (!alreadyDone && (extra[0] !== '' || extra[1] !== '')) {
-      throw new Error('Columns L and M of "' + SHEET_NAMES.cells + '" already contain other data. Nothing was changed.');
-    }
-    if (sheet.getMaxColumns() < CELL_HEADERS.length) sheet.insertColumnsAfter(sheet.getMaxColumns(), CELL_HEADERS.length - sheet.getMaxColumns());
-    if (!alreadyDone) sheet.getRange(1, COL.visualStatus + 1, 1, 2).setValues([expectedExtra]);
-
-    setTextFormatForColumns(sheet, [COL.visualStatus, COL.remarks]);
-    var last = sheet.getLastRow();
-    var backfilled = 0;
-    if (last >= 2) {
-      var range = sheet.getRange(2, COL.visualStatus + 1, last - 1, 1);
-      var current = range.getValues();
-      var serials = sheet.getRange(2, 1, last - 1, 1).getValues();
-      var next = current.map(function (row, i) {
-        var hasData = serialKey(serials[i][0]) !== '';
-        if (hasData && String(row[0]).replace(/^\s+|\s+$/g, '') === '') {
-          backfilled++;
-          return [DEFAULT_VISUAL_STATUS];
-        }
-        return [row[0]];
-      });
-      range.setValues(next);
-    }
-    applyVisualStatusDropdown(sheet);
-    console.log('Visual Inspection migration finished. Rows set to "' + DEFAULT_VISUAL_STATUS + '": ' + backfilled + '.');
-  });
 }
 
 /** Admin tool: run the same journal recovery and repair a write would perform. */
