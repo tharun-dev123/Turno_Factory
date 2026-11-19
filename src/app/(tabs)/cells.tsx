@@ -1,10 +1,13 @@
 import { useRouter } from 'expo-router';
-import { FlatList, RefreshControl, View } from 'react-native';
+import { useState } from 'react';
+import { FlatList, Pressable, RefreshControl, View } from 'react-native';
 
 import { CellListItem } from '@/components/cells/CellListItem';
+import { FilterSheet } from '@/components/cells/FilterSheet';
 import { StatCard } from '@/components/cells/StatCard';
 import { AppText } from '@/components/ui/AppText';
 import { BrandHeader } from '@/components/ui/BrandHeader';
+import { Icon } from '@/components/ui/Icon';
 import { IconButton } from '@/components/ui/IconButton';
 import { KeyboardAvoider } from '@/components/ui/KeyboardAware';
 import { Pill } from '@/components/ui/Pill';
@@ -15,17 +18,19 @@ import { appConfig } from '@/config/appConfig';
 import { useAuth } from '@/context/AuthContext';
 import { useCells } from '@/hooks/useCells';
 import type { CellRecord } from '@/models/cell';
-import { colors } from '@/theme';
+import { colors, radius, shadows } from '@/theme';
 import { formatCount } from '@/utils/format';
 
 /** 03 - All Cells Dashboard */
 export default function AllCellsScreen() {
   const router = useRouter();
   const { canWrite } = useAuth();
-  const { query, setQuery, cells, stats, state, error, refreshing, refresh, retry } = useCells();
+  const { query, setQuery, manufacturer, setManufacturer, status: statusFilter, setStatus, filtersActive, clearAll, cells, stats, state, error, refreshing, refresh, retry } = useCells();
 
   const openCell = (cell: CellRecord) => router.push({ pathname: '/cell/[id]', params: { id: cell.id } });
-  const searching = query.trim().length > 0;
+  const searching = query.trim().length > 0 || filtersActive;
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const activeFilterCount = (manufacturer !== null ? 1 : 0) + (statusFilter !== null ? 1 : 0);
 
   return (
     <KeyboardAvoider style={{ flex: 1, backgroundColor: colors.background }}>
@@ -81,7 +86,54 @@ export default function AllCellsScreen() {
               />
             </View>
 
-            <SearchBar value={query} onChangeText={setQuery} />
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+              <View style={{ flex: 1 }}>
+                <SearchBar value={query} onChangeText={setQuery} placeholder="Search Cell ID or Serial No..." />
+              </View>
+              <Pressable
+                testID="open-filters"
+                accessibilityRole="button"
+                accessibilityLabel={activeFilterCount > 0 ? `Filters, ${activeFilterCount} active` : 'Filters'}
+                onPress={() => setFiltersOpen(true)}
+                style={({ pressed }) => [
+                  {
+                    width: 52,
+                    height: 52,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    borderRadius: radius.xl,
+                    borderWidth: activeFilterCount > 0 ? 1.5 : 1,
+                    borderColor: activeFilterCount > 0 ? colors.turnoOrange : colors.slate200,
+                    backgroundColor: activeFilterCount > 0 ? colors.orange50 : pressed ? colors.slate50 : colors.surface,
+                  },
+                  shadows.card,
+                ]}
+              >
+                <Icon name="tune" size={22} color={activeFilterCount > 0 ? colors.turnoOrange : colors.slate700} />
+                {activeFilterCount > 0 ? (
+                  <View
+                    style={{
+                      position: 'absolute',
+                      top: -6,
+                      right: -6,
+                      minWidth: 20,
+                      height: 20,
+                      paddingHorizontal: 5,
+                      borderRadius: 10,
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      backgroundColor: colors.turnoOrange,
+                      borderWidth: 2,
+                      borderColor: colors.background,
+                    }}
+                  >
+                    <AppText variant="labelSm" color="#FFFFFF" style={{ fontSize: 10, lineHeight: 12 }}>
+                      {activeFilterCount}
+                    </AppText>
+                  </View>
+                ) : null}
+              </Pressable>
+            </View>
 
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 4 }}>
               <AppText variant="overline" color={colors.slate600} style={{ fontSize: 12 }}>
@@ -103,7 +155,17 @@ export default function AllCellsScreen() {
               onAction={retry}
             />
           ) : searching ? (
-            <MessageState icon="search-off" title="No matching cells" message={`Nothing matches “${query.trim()}”. Try a different barcode or serial number.`} />
+            <MessageState
+              icon="search-off"
+              title="No matching cells"
+              message={
+                query.trim().length > 0
+                  ? `Nothing matches “${query.trim()}”${filtersActive ? ' with the selected filters' : ''}. Try a different barcode or serial number.`
+                  : 'No cells match the selected filters.'
+              }
+              actionLabel="Clear search and filters"
+              onAction={clearAll}
+            />
           ) : (
             <MessageState
               icon="inventory-2"
@@ -114,6 +176,22 @@ export default function AllCellsScreen() {
             />
           )
         }
+      />
+
+      <FilterSheet
+        visible={filtersOpen}
+        filters={{ manufacturer, status: statusFilter }}
+        onApply={(next) => {
+          setManufacturer(next.manufacturer);
+          setStatus(next.status);
+          setFiltersOpen(false);
+        }}
+        onReset={() => {
+          setManufacturer(null);
+          setStatus(null);
+          setFiltersOpen(false);
+        }}
+        onClose={() => setFiltersOpen(false)}
       />
     </KeyboardAvoider>
   );

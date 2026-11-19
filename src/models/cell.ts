@@ -20,6 +20,10 @@ export const DEFAULT_VISUAL_STATUS: VisualInspectionStatus = 'Under Review';
 export const REMARKS_REQUIRED_STATUSES: readonly VisualInspectionStatus[] = ['Damaged', 'Rejected'];
 export const MAX_REMARKS_LENGTH = 500;
 
+/** The cell manufacturers an admin can pick from (exact text, same list as the backend). */
+export const MANUFACTURERS = ['GREAT POWER 100', 'EVE 230'] as const;
+export type Manufacturer = (typeof MANUFACTURERS)[number];
+
 /** Fields the operator may edit on an existing cell (Edit Cell screen). */
 export interface EditableCellFields {
   /** Tray position, e.g. `L4-CELL-088` */
@@ -40,6 +44,8 @@ export interface EditableCellFields {
   dcir90Mohm: number | null;
   /** Visual inspection result (never null: new cells are `Under Review`) */
   visualInspectionStatus: VisualInspectionStatus;
+  /** Who made the cell. Empty until an admin chooses one */
+  manufacturer: Manufacturer | null;
   /** Reviewer's note. Required when the status is Damaged or Rejected */
   remarks: string | null;
 }

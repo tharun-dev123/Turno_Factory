@@ -188,7 +188,7 @@ describe('create / read', () => {
       dcir50Mohm: null,
       dcir90Mohm: null,
     });
-    expect(h.backend.sheets.cells.dump()[0]).toEqual(['1', 'QR-PAYLOAD-1', '', '', '', '', '', '', '', '', 'Under Review', '', expect.stringMatching(/^\d{4}-\d\d-\d\d \d\d:\d\d:\d\d IST$/)]);
+    expect(h.backend.sheets.cells.dump()[0]).toEqual(['1', 'QR-PAYLOAD-1', '', '', '', '', '', '', '', '', 'Under Review', '', expect.stringMatching(/^\d{4}-\d\d-\d\d \d\d:\d\d:\d\d IST$/), '']);
     expect(await h.repo.getById('1')).toEqual(cell);
     expect(await h.repo.findByBarcode('QR-PAYLOAD-1')).toEqual(cell);
     expect(await h.repo.findByBarcode('missing')).toBeNull();
@@ -290,7 +290,7 @@ describe('update and optimistic locking', () => {
       requestId: 'req-int-upd-1',
     });
     expect(updated.version).toBe(2);
-    expect(h.backend.sheets.cells.dump()[0]).toEqual(['1', 'UPD-1', 3120.4, 3.652, 0.42, 'L4-CELL-088', 50.2, 0.68, 0.65, 0.63, 'Under Review', '', expect.stringMatching(/^\d{4}-\d\d-\d\d \d\d:\d\d:\d\d IST$/)]);
+    expect(h.backend.sheets.cells.dump()[0]).toEqual(['1', 'UPD-1', 3120.4, 3.652, 0.42, 'L4-CELL-088', 50.2, 0.68, 0.65, 0.63, 'Under Review', '', expect.stringMatching(/^\d{4}-\d\d-\d\d \d\d:\d\d:\d\d IST$/), '']);
   });
 
   it('a new cell starts as Under Review and the reviewer can change it; Damaged needs remarks', async () => {
@@ -310,6 +310,20 @@ describe('update and optimistic locking', () => {
     });
     expect(updated).toMatchObject({ visualInspectionStatus: 'Damaged', remarks: 'Dent near the terminal', version: 2 });
     expect(h.backend.sheets.cells.dump()[0].slice(10, 12)).toEqual(['Damaged', 'Dent near the terminal']);
+  });
+
+  it('stores the manufacturer in column N and rejects a name that is not on the list', async () => {
+    const h = await signedIn();
+    const created = await h.repo.create(newInput('MFR-1', 'req-int-mfr-0'));
+    expect(created.manufacturer).toBeNull();
+
+    const updated = await h.repo.update(created.id, { manufacturer: 'EVE 230', expectedVersion: created.version, requestId: 'req-int-mfr-1' });
+    expect(updated).toMatchObject({ manufacturer: 'EVE 230', version: 2 });
+    expect(h.backend.sheets.cells.dump()[0][13]).toBe('EVE 230');
+
+    await expect(
+      h.repo.update(created.id, { manufacturer: 'Somebody' as never, expectedVersion: 2, requestId: 'req-int-mfr-2' }),
+    ).rejects.toMatchObject({ code: 'VALIDATION', fieldErrors: { manufacturer: expect.any(String) } });
   });
 
   it('rejects a stale update with a ConflictError instead of overwriting', async () => {

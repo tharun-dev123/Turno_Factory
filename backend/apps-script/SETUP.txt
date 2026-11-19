@@ -23,9 +23,10 @@ FILES (paste each into the Apps Script editor, in this folder: backend/apps-scri
 
 3. PREPARE THE SPREADSHEET
    - Spreadsheet "Turno_Factory_Demo" must contain the tab "BatteryCells" (empty, or already with the exact
-     13 headers in order: Serial Number | Battery Barcode | Cell Weight | Cell Voltage | ACIR |
+     14 headers in order: Serial Number | Battery Barcode | Cell Weight | Cell Voltage | ACIR |
      Cell Local Number | 0.5C DCh capacities | DCIR @20% | DCIR @50% | DCIR @90% |
-     Cell Status | Remarks | Created At).
+     Cell Status | Remarks | Created At | Manufacturer).
+     "Manufacturer" (column N) is a dropdown: GREAT POWER 100 or EVE 230, or empty. Only an Admin can set it.
      "Created At" is filled in by the server when a cell is registered, in Indian Standard Time
      (for example "2026-11-17 13:47:05 IST"). It is never edited. The app still receives UTC timestamps.
      If the sheet still has the old "Sorting" column (C), delete that whole column first (right-click the

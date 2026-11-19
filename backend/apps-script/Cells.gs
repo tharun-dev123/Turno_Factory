@@ -237,6 +237,9 @@ function handleUpdate(payload, body) {
         fieldErrors: { remarks: 'Required when the status is ' + resultingStatus + '.' },
       });
     }
+    if (Object.prototype.hasOwnProperty.call(patch, 'manufacturer')) {
+      newCellValues[COL.manufacturer] = patch.manufacturer === null ? '' : patch.manufacturer;
+    }
     if (check) newCellValues[COL.barcode] = check.barcode;
 
     var newMetaValues = metaRow.values.slice();

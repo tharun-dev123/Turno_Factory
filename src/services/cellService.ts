@@ -4,8 +4,10 @@ import type {
   CellStats,
   CreateCellInput,
   EditableCellFields,
+  Manufacturer,
   ScanSource,
   UpdateCellInput,
+  VisualInspectionStatus,
 } from '@/models/cell';
 import { normalizeText, validateEditableFields } from '@/utils/validators';
 import { checkScanPayload, type BarcodeCheckResult, type BarcodeRejectReason } from '@/validation/barcodeValidation';
@@ -140,6 +142,24 @@ export function filterCells(cells: CellRecord[], query: string): CellRecord[] {
       );
     }
     return false;
+  });
+}
+
+/** Filters for the All Cells list. `null` means "any". */
+export interface CellFilters {
+  /** A manufacturer name, or `'none'` for cells that have no manufacturer yet */
+  manufacturer: Manufacturer | 'none' | null;
+  status: VisualInspectionStatus | null;
+}
+
+/** Narrows a list by manufacturer and cell status (both must match). Pure and synchronous. */
+export function applyCellFilters(cells: CellRecord[], filters: CellFilters): CellRecord[] {
+  const { manufacturer, status } = filters;
+  if (manufacturer === null && status === null) return cells;
+  return cells.filter((cell) => {
+    if (manufacturer === 'none' ? cell.manufacturer !== null : manufacturer !== null && cell.manufacturer !== manufacturer) return false;
+    if (status !== null && cell.visualInspectionStatus !== status) return false;
+    return true;
   });
 }
 

@@ -36,6 +36,7 @@ async function load(): Promise<void> {
         version: cell.version ?? 1,
         visualInspectionStatus: cell.visualInspectionStatus ?? DEFAULT_VISUAL_STATUS,
         remarks: cell.remarks ?? null,
+        manufacturer: cell.manufacturer ?? null,
       };
     });
     const storedCounter = await readSerialCounter();
@@ -132,6 +133,7 @@ export const mockCellRepository: CellRepository = {
         qcStatus: 'pending',
         visualInspectionStatus: DEFAULT_VISUAL_STATUS,
         remarks: null,
+        manufacturer: null,
         version: 1,
       };
       cells.push(record);

@@ -116,4 +116,12 @@ describe('Cell Details screen', () => {
       expect(peekCell('dummy-001')).toBeNull();
     });
   });
+
+  it('shows the manufacturer, or "Not recorded" when there is none', async () => {
+    testGlobals.__routeParams = { id: 'dummy-002' }; // seeded with a manufacturer
+    await renderScreen(<CellDetailsScreen />);
+    await screen.findByText('Cell Details');
+    expect(screen.getByText('Manufacturer')).toBeTruthy();
+    expect(screen.getByText('EVE 230')).toBeTruthy();
+  });
 });

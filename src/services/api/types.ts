@@ -29,6 +29,8 @@ export interface ApiCell {
   /** 'Good' | 'Damaged' | 'Under Review' | 'Rejected' */
   visualInspectionStatus: string;
   remarks: string | null;
+  /** 'GREAT POWER 100' | 'EVE 230' | null */
+  manufacturer: string | null;
   stationId: string | null;
   lineId: string | null;
   scannedAt: string;

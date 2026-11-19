@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useState } from 'react';
 
-import type { CellRecord, EditableFieldKey, ScanSource, VisualInspectionStatus } from '@/models/cell';
+import type { CellRecord, EditableFieldKey, Manufacturer, ScanSource, VisualInspectionStatus } from '@/models/cell';
 import { updateCell, type UpdateCellRequest } from '@/services/cellService';
 import { getErrorMessage, ValidationError } from '@/services/errors';
 import { FIELD_LABELS, formatNumberInput, NUMERIC_FIELDS, parseNumberInput } from '@/utils/validators';
@@ -17,6 +17,7 @@ export interface CellFormValues {
   dcir90Mohm: string;
   visualInspectionStatus: VisualInspectionStatus;
   remarks: string;
+  manufacturer: Manufacturer | null;
 }
 
 export interface PendingBarcode {
@@ -37,6 +38,7 @@ function toFormValues(cell: CellRecord): CellFormValues {
     dcir90Mohm: formatNumberInput(cell.dcir90Mohm),
     visualInspectionStatus: cell.visualInspectionStatus,
     remarks: cell.remarks ?? '',
+    manufacturer: cell.manufacturer,
   };
 }
 
@@ -72,6 +74,7 @@ export function useCellForm(cell: CellRecord) {
       cellLocalNumber: values.cellLocalNumber,
       visualInspectionStatus: values.visualInspectionStatus,
       remarks: values.remarks,
+      manufacturer: values.manufacturer,
       // Reject the save (instead of overwriting) if someone else changed this cell after it was loaded.
       expectedVersion: cell.version,
     };

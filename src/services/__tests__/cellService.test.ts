@@ -200,4 +200,26 @@ describe('cellService (mock data source)', () => {
       expect(next.status === 'registered' && next.cell.serialNumber).toBe(22);
     });
   });
+
+  describe('applyCellFilters', () => {
+    it('filters by manufacturer, "none", and status, and returns the same list when nothing is selected', async () => {
+      const cells = await svc.listCells();
+      expect(svc.applyCellFilters(cells, { manufacturer: null, status: null })).toBe(cells);
+
+      const eve = svc.applyCellFilters(cells, { manufacturer: 'EVE 230', status: null });
+      expect(eve.length).toBeGreaterThan(0);
+      expect(eve.every((c) => c.manufacturer === 'EVE 230')).toBe(true);
+
+      const none = svc.applyCellFilters(cells, { manufacturer: 'none', status: null });
+      expect(none.length).toBeGreaterThan(0);
+      expect(none.every((c) => c.manufacturer === null)).toBe(true);
+
+      const damaged = svc.applyCellFilters(cells, { manufacturer: null, status: 'Damaged' });
+      expect(damaged.length).toBeGreaterThan(0);
+      expect(damaged.every((c) => c.visualInspectionStatus === 'Damaged')).toBe(true);
+
+      const both = svc.applyCellFilters(cells, { manufacturer: 'EVE 230', status: 'Good' });
+      expect(both.every((c) => c.manufacturer === 'EVE 230' && c.visualInspectionStatus === 'Good')).toBe(true);
+    });
+  });
 });

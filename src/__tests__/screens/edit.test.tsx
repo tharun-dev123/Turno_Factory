@@ -27,7 +27,7 @@ describe('Edit Cell screen', () => {
     expect(await screen.findByText('Edit Cell')).toBeTruthy();
     expect(screen.getByLabelText('Serial number (read-only)').props.editable).toBe(false);
     expect(screen.queryByText('Unsaved Changes')).toBeNull();
-    expect(screen.getByLabelText('Save Changes').props.accessibilityState.disabled).toBe(true);
+    expect(screen.getByLabelText('Save Changes').props.accessibilityState?.disabled).toBeFalsy();
   });
 
   it('marks the form dirty when a value changes', async () => {
@@ -135,6 +135,66 @@ describe('Edit Cell screen', () => {
       expect(await screen.findByText(/changed by someone else/)).toBeTruthy();
       expect(testGlobals.__router.back).not.toHaveBeenCalled();
       expect((await getCell('dummy-001')).cellWeightG).toBe(4000); // their change survived
+    });
+  });
+
+  describe('right after a scan', () => {
+    it('shows a "registered" banner with the serial number when opened from the scanner', async () => {
+      testGlobals.__routeParams = { id: 'dummy-001', registered: '1' };
+      await renderScreen(<EditCellScreen />);
+      expect(await screen.findByTestId('registered-banner')).toBeTruthy();
+      expect(screen.getByText('Cell #001 registered')).toBeTruthy();
+      expect(screen.getByText('Enter the cell details below, then save.')).toBeTruthy();
+    });
+
+    it('does not show the banner when a cell is opened for editing from All Cells', async () => {
+      testGlobals.__routeParams = { id: 'dummy-001' };
+      await renderScreen(<EditCellScreen />);
+      await screen.findByText('Edit Cell');
+      expect(screen.queryByTestId('registered-banner')).toBeNull();
+    });
+  });
+
+  describe('saving without changes', () => {
+    it('keeps Save enabled; pressing it with no changes just goes back without writing anything', async () => {
+      await renderScreen(<EditCellScreen />);
+      await screen.findByText('Edit Cell');
+      const before = await getCell('dummy-001');
+      const button = screen.getByLabelText('Save Changes');
+      expect(button.props.accessibilityState?.disabled).toBeFalsy();
+      await fireEvent.press(button);
+      await waitFor(() => expect(testGlobals.__router.back).toHaveBeenCalled());
+      expect(await getCell('dummy-001')).toEqual(before); // same version and updatedAt: no write happened
+    });
+  });
+
+  describe('Manufacturer', () => {
+    it('offers exactly the two manufacturers plus "Not set"', async () => {
+      await renderScreen(<EditCellScreen />);
+      await fireEvent.press(await screen.findByLabelText(/^Manufacturer: /));
+      expect(screen.getAllByText('GREAT POWER 100').length).toBeGreaterThan(0);
+      expect(screen.getAllByText('EVE 230').length).toBeGreaterThan(0);
+      expect(screen.getByText('Not set')).toBeTruthy();
+    });
+
+    it('saves the chosen manufacturer', async () => {
+      testGlobals.__routeParams = { id: 'dummy-013' };
+      await renderScreen(<EditCellScreen />);
+      await fireEvent.press(await screen.findByLabelText(/^Manufacturer: /));
+      await fireEvent.press(screen.getByText('EVE 230'));
+      await fireEvent.press(screen.getByLabelText('Save Changes'));
+      await waitFor(() => expect(testGlobals.__router.back).toHaveBeenCalled());
+      expect((await getCell('dummy-013')).manufacturer).toBe('EVE 230');
+    });
+
+    it('can clear it with "Not set"', async () => {
+      testGlobals.__routeParams = { id: 'dummy-001' };
+      await renderScreen(<EditCellScreen />);
+      await fireEvent.press(await screen.findByLabelText(/^Manufacturer: /));
+      await fireEvent.press(screen.getByText('Not set'));
+      await fireEvent.press(screen.getByLabelText('Save Changes'));
+      await waitFor(() => expect(testGlobals.__router.back).toHaveBeenCalled());
+      expect((await getCell('dummy-001')).manufacturer).toBeNull();
     });
   });
 });

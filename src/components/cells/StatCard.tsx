@@ -20,8 +20,8 @@ export function StatCard({ label, value, caption, captionIcon, icon, accent }: S
       style={[
         {
           flex: 1,
-          padding: 16,
-          gap: 8,
+          padding: 10,
+          gap: 4,
           backgroundColor: colors.surface,
           borderRadius: radius.xl,
           borderWidth: 1,
@@ -36,8 +36,8 @@ export function StatCard({ label, value, caption, captionIcon, icon, accent }: S
         </AppText>
         <View
           style={{
-            width: 32,
-            height: 32,
+            width: 24,
+            height: 24,
             borderRadius: radius.lg,
             alignItems: 'center',
             justifyContent: 'center',
@@ -46,14 +46,14 @@ export function StatCard({ label, value, caption, captionIcon, icon, accent }: S
             borderColor: accent ? colors.orange100 : colors.slate200,
           }}
         >
-          <Icon name={icon} size={18} color={accent ? colors.turnoOrange : colors.slate700} />
+          <Icon name={icon} size={14} color={accent ? colors.turnoOrange : colors.slate700} />
         </View>
       </View>
       <View>
-        <AppText variant="headlineMd" style={{ fontFamily: 'HankenGrotesk_800ExtraBold', fontSize: 24, lineHeight: 30 }}>
+        <AppText variant="headlineMd" style={{ fontFamily: 'HankenGrotesk_800ExtraBold', fontSize: 20, lineHeight: 24 }}>
           {value}
         </AppText>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 0 }}>
           <Icon name={captionIcon} size={14} color={accent ? colors.emerald600 : colors.slate500} />
           <AppText variant="labelMd" color={accent ? colors.emerald600 : colors.slate500} style={{ letterSpacing: 0 }}>
             {caption}

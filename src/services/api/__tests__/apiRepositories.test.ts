@@ -21,6 +21,7 @@ const dto = (overrides: Partial<ApiCell> = {}): ApiCell => ({
   dcir90Mohm: null,
   visualInspectionStatus: 'Under Review',
   remarks: null,
+  manufacturer: null,
   stationId: 'A-12',
   lineId: '04',
   scannedAt: '2026-11-11T10:00:00.000Z',
@@ -65,6 +66,26 @@ describe('API cell repository', () => {
     expect(a).toMatchObject({ visualInspectionStatus: 'Damaged', remarks: 'Dent' });
     expect(b).toMatchObject({ visualInspectionStatus: 'Under Review', remarks: null });
     expect(c).toMatchObject({ visualInspectionStatus: 'Under Review', remarks: null });
+  });
+
+  it('maps the manufacturer, and treats a missing or unknown one as none', async () => {
+    const { client } = fakeClient({
+      cells: [
+        dto({ manufacturer: 'GREAT POWER 100' }),
+        dto({ id: '8', serialNumber: 8, manufacturer: 'Somebody' }),
+        { ...dto({ id: '9', serialNumber: 9 }), manufacturer: undefined } as unknown as ApiCell,
+      ],
+    });
+    const [a, b, c] = await createApiCellRepository(client).list();
+    expect(a.manufacturer).toBe('GREAT POWER 100');
+    expect(b.manufacturer).toBeNull();
+    expect(c.manufacturer).toBeNull();
+  });
+
+  it('sends the manufacturer in the update patch', async () => {
+    const { client, call } = fakeClient({ cell: dto({ manufacturer: 'EVE 230' }) });
+    await createApiCellRepository(client).update('7', { manufacturer: 'EVE 230', expectedVersion: 3, requestId: 'r-2' });
+    expect(call).toHaveBeenCalledWith('cells.update', { id: '7', expectedVersion: 3, patch: { manufacturer: 'EVE 230' } }, expect.anything());
   });
 
   it('sends the visual inspection fields in the update patch', async () => {

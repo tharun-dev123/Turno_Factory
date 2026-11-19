@@ -20,7 +20,7 @@ import { useToast } from '@/components/ui/Toast';
 import { useAuth } from '@/context/AuthContext';
 import { useCell } from '@/hooks/useCell';
 import { useCellForm, type CellFormValues } from '@/hooks/useCellForm';
-import { MAX_REMARKS_LENGTH, REMARKS_REQUIRED_STATUSES, VISUAL_INSPECTION_STATUSES, type CellRecord, type VisualInspectionStatus } from '@/models/cell';
+import { MANUFACTURERS, MAX_REMARKS_LENGTH, REMARKS_REQUIRED_STATUSES, VISUAL_INSPECTION_STATUSES, type CellRecord, type Manufacturer, type VisualInspectionStatus } from '@/models/cell';
 import { colors, radius } from '@/theme';
 import { formatSerial } from '@/utils/format';
 
@@ -63,7 +63,7 @@ function MeasurementField({ label, unit, field, values, errors, setField }: Meas
 }
 
 /** `latestVersion` is the newest version the app has seen. When it is ahead of `cell`, the form is out of date. */
-function EditForm({ cell, latestVersion }: { cell: CellRecord; latestVersion: number }) {
+function EditForm({ cell, latestVersion, justRegistered }: { cell: CellRecord; latestVersion: number; justRegistered: boolean }) {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const keyboardVisible = useKeyboardVisible();
@@ -82,6 +82,12 @@ function EditForm({ cell, latestVersion }: { cell: CellRecord; latestVersion: nu
   };
 
   const onSave = async () => {
+    // Nothing was changed (for example the admin will add the details later): there is nothing to send, so do not
+    // create an empty update, a new version, or an audit entry. Just return.
+    if (!dirty) {
+      leave();
+      return;
+    }
     const saved = await save();
     if (saved) {
       toast.show(`Cell ${formatSerial(saved.serialNumber)} updated`);
@@ -115,6 +121,25 @@ function EditForm({ cell, latestVersion }: { cell: CellRecord; latestVersion: nu
       </BrandHeader>
 
       <KeyboardAwareScrollView contentContainerStyle={{ padding: 16, gap: 14, paddingBottom: 24 }}>
+        {justRegistered ? (
+          <View
+            accessibilityRole="summary"
+            accessibilityLabel={`Cell ${formatSerial(cell.serialNumber)} registered. Enter the cell details.`}
+            testID="registered-banner"
+            style={{ flexDirection: 'row', gap: 10, alignItems: 'center', padding: 12, borderRadius: radius.lg, backgroundColor: colors.emerald50, borderWidth: 1, borderColor: colors.emerald200 }}
+          >
+            <Icon name="check-circle" size={22} color={colors.emerald700} />
+            <View style={{ flex: 1 }}>
+              <AppText variant="labelLg" color={colors.emerald700}>
+                Cell {formatSerial(cell.serialNumber)} registered
+              </AppText>
+              <AppText variant="bodySm" color={colors.emerald700}>
+                Enter the cell details below, then save.
+              </AppText>
+            </View>
+          </View>
+        ) : null}
+
         {latestVersion > cell.version ? (
           <View accessibilityRole="alert" style={{ flexDirection: 'row', gap: 8, alignItems: 'center', padding: 12, borderRadius: radius.lg, backgroundColor: colors.amber50, borderWidth: 1, borderColor: colors.amber200 }}>
             <Icon name="info-outline" size={18} color={colors.amber800} />
@@ -193,6 +218,15 @@ function EditForm({ cell, latestVersion }: { cell: CellRecord; latestVersion: nu
               right={<Icon name="grid-view" size={20} color={colors.slate400} />}
             />
 
+            <SelectField
+              label="Manufacturer"
+              value={values.manufacturer}
+              options={MANUFACTURERS}
+              placeholder="Not set"
+              error={errors.manufacturer}
+              onChange={(name) => setField('manufacturer', name as Manufacturer | null)}
+            />
+
             <MeasurementField label="Cell Weight" unit="g" field="cellWeightG" values={values} errors={errors} setField={setField} />
             <MeasurementField label="Cell Voltage (OCV)" unit="V" field="cellVoltageV" values={values} errors={errors} setField={setField} />
             <MeasurementField label="ACIR (1kHz)" unit="mΩ" field="acirMohm" values={values} errors={errors} setField={setField} />
@@ -241,7 +275,7 @@ function EditForm({ cell, latestVersion }: { cell: CellRecord; latestVersion: nu
         }}
       >
         <Button label="Cancel" icon="close" variant="outline" onPress={onCancel} disabled={saving} style={{ flex: 1 }} testID="edit-cancel-button" />
-        <Button label="Save Changes" icon="save" onPress={onSave} loading={saving} disabled={!dirty} style={{ flex: 1.3 }} testID="edit-save-button" />
+        <Button label="Save Changes" icon="save" onPress={onSave} loading={saving} style={{ flex: 1.3 }} testID="edit-save-button" />
       </View>
 
       <RescanModal
@@ -270,7 +304,7 @@ function EditForm({ cell, latestVersion }: { cell: CellRecord; latestVersion: nu
 
 /** 05 - Edit Cell */
 export default function EditCellScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id, registered } = useLocalSearchParams<{ id: string; registered?: string }>();
   const router = useRouter();
   const { status, canWrite } = useAuth();
   // Open instantly from the last known copy; the latest copy loads in the background.
@@ -294,7 +328,7 @@ export default function EditCellScreen() {
       ) : state === 'error' || !cell || !formCell ? (
         <MessageState tone="danger" icon="cloud-off" title="Could not load this cell" message={error ?? undefined} actionLabel="Retry" onAction={retry} />
       ) : (
-        <EditForm key={formCell.id} cell={formCell} latestVersion={cell.version} />
+        <EditForm key={formCell.id} cell={formCell} latestVersion={cell.version} justRegistered={registered === '1'} />
       )}
     </View>
   );

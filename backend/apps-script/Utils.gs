@@ -232,6 +232,7 @@ function validatePatch(patch) {
   for (i = 0; i < NUMERIC_FIELDS.length; i++) allowed[NUMERIC_FIELDS[i].key] = 'number';
   allowed.visualInspectionStatus = 'status';
   allowed.remarks = 'remarks';
+  allowed.manufacturer = 'manufacturer';
 
   var errors = {};
   var clean = {};
@@ -246,6 +247,14 @@ function validatePatch(patch) {
       // Exactly one of the four statuses: null, blank or unknown values are rejected.
       if (typeof value !== 'string' || VISUAL_STATUSES.indexOf(value) === -1) {
         errors[key] = 'Must be one of: ' + VISUAL_STATUSES.join(', ') + '.';
+      } else {
+        clean[key] = value;
+      }
+    } else if (kind === 'manufacturer') {
+      // One of the listed manufacturers, or null to clear it.
+      if (value === null) clean[key] = null;
+      else if (typeof value !== 'string' || MANUFACTURERS.indexOf(value) === -1) {
+        errors[key] = 'Must be one of: ' + MANUFACTURERS.join(', ') + '.';
       } else {
         clean[key] = value;
       }

@@ -11,7 +11,7 @@ var API_VERSION = '1.0.0';
 
 var SHEET_NAMES = { cells: 'BatteryCells', meta: 'CellMeta', audit: 'AuditLog' };
 
-/** BatteryCells: exact 13-column order (A..M). Do not reorder. */
+/** BatteryCells: exact 14-column order (A..N). Do not reorder. */
 var CELL_HEADERS = [
   'Serial Number', // A
   'Battery Barcode', // B
@@ -26,6 +26,7 @@ var CELL_HEADERS = [
   'Cell Status', // K
   'Remarks', // L
   'Created At', // M (IST text, set by the server when the cell is registered, never edited)
+  'Manufacturer', // N (dropdown: one of MANUFACTURERS, or empty)
 ];
 
 var META_HEADERS = [
@@ -59,6 +60,7 @@ var COL = {
   visualStatus: 10,
   remarks: 11,
   createdAt: 12,
+  manufacturer: 13,
 };
 
 var META_COL = {
@@ -92,11 +94,13 @@ var NUMERIC_FIELDS = [
 ];
 
 /** Columns of BatteryCells that must be plain text (identifiers). */
-var CELL_TEXT_COLUMNS = [COL.serial, COL.barcode, COL.localNumber, COL.visualStatus, COL.remarks, COL.createdAt];
+var CELL_TEXT_COLUMNS = [COL.serial, COL.barcode, COL.localNumber, COL.visualStatus, COL.remarks, COL.createdAt, COL.manufacturer];
 
 /** Visual Inspection: the only allowed statuses. Every cell has exactly one; new cells start as Under Review. */
 var VISUAL_STATUSES = ['Good', 'Damaged', 'Under Review', 'Rejected'];
 var DEFAULT_VISUAL_STATUS = 'Under Review';
+/** Manufacturer: the only allowed values (exact text). A cell may also have none (empty). */
+var MANUFACTURERS = ['GREAT POWER 100', 'EVE 230'];
 /** A reviewer must explain these two statuses in Remarks. */
 var REMARKS_REQUIRED_STATUSES = ['Damaged', 'Rejected'];
 

@@ -30,7 +30,7 @@ describe('create: partial-write handling', () => {
   it('rolls back the CellMeta row when the BatteryCells write fails', () => {
     const b = createBackend();
     b.login();
-    b.sheets.cells.failNext('setValues', { when: (range) => range.numCols === 13 && range.row >= 2 });
+    b.sheets.cells.failNext('setValues', { when: (range) => range.numCols === 14 && range.row >= 2 });
     const res = b.create('PART-2');
     expect(res).toMatchObject({ ok: false, error: { code: 'INTERNAL', details: { recovery: 'ROLLED_BACK' } } });
     expect(b.sheets.meta.dump()).toHaveLength(0);

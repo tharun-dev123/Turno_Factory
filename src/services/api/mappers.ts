@@ -1,9 +1,11 @@
 import {
   DEFAULT_VISUAL_STATUS,
+  MANUFACTURERS,
   VISUAL_INSPECTION_STATUSES,
   type CellRecord,
   type CreateCellInput,
   type EditableFieldKey,
+  type Manufacturer,
   type UpdateCellInput,
   type VisualInspectionStatus,
 } from '@/models/cell';
@@ -15,6 +17,11 @@ import type { ApiCell } from './types';
 /** A missing or unknown status (for example from an older backend) reads as the default, never as free text. */
 function toVisualStatus(value: unknown): VisualInspectionStatus {
   return VISUAL_INSPECTION_STATUSES.find((status) => status === value) ?? DEFAULT_VISUAL_STATUS;
+}
+
+/** An unknown or missing manufacturer reads as "none", never as free text. */
+function toManufacturer(value: unknown): Manufacturer | null {
+  return MANUFACTURERS.find((name) => name === value) ?? null;
 }
 
 /** Backend cell -> app model. QC / sync status are display-only defaults (not stored). */
@@ -37,6 +44,7 @@ export function toCellRecord(dto: ApiCell): CellRecord {
     dcir90Mohm: dto.dcir90Mohm,
     visualInspectionStatus: toVisualStatus(dto.visualInspectionStatus),
     remarks: dto.remarks ?? null,
+    manufacturer: toManufacturer(dto.manufacturer),
     stationId: dto.stationId,
     lineId: dto.lineId,
     scannedAt: dto.scannedAt,
@@ -48,7 +56,7 @@ export function toCellRecord(dto: ApiCell): CellRecord {
   };
 }
 
-const EDITABLE_KEYS: readonly EditableFieldKey[] = [...TEXT_FIELDS, ...NUMERIC_FIELDS, 'visualInspectionStatus', 'remarks'];
+const EDITABLE_KEYS: readonly EditableFieldKey[] = [...TEXT_FIELDS, ...NUMERIC_FIELDS, 'visualInspectionStatus', 'remarks', 'manufacturer'];
 
 /** Registering a cell sends only the scanned code (+ scan time and station/line). */
 export function toCreatePayload(input: CreateCellInput): Record<string, unknown> {

@@ -50,7 +50,7 @@ describe('Scan screen', () => {
     await screen.findByTestId('camera');
     await scan('BRAND-NEW-CELL-1');
     await waitFor(() => expect(testGlobals.__router.push).toHaveBeenCalledTimes(1));
-    expect(testGlobals.__router.push).toHaveBeenCalledWith({ pathname: '/cell/edit/[id]', params: { id: expect.any(String) } });
+    expect(testGlobals.__router.push).toHaveBeenCalledWith({ pathname: '/cell/edit/[id]', params: { id: expect.any(String), registered: '1' } });
 
     // The cell really was registered (it is the one the Edit page was opened for), and no result card is left
     // behind: the scanner is ready for the next scan when the operator comes back.
@@ -108,7 +108,7 @@ describe('Scan screen', () => {
     await fireEvent.press(await screen.findByLabelText('Enter barcode manually'));
     await fireEvent.changeText(await screen.findByLabelText('Battery barcode'), 'MANUAL-ENTRY-9');
     await fireEvent.press(screen.getByLabelText('Register Cell'));
-    await waitFor(() => expect(testGlobals.__router.push).toHaveBeenCalledWith({ pathname: '/cell/edit/[id]', params: { id: expect.any(String) } }));
+    await waitFor(() => expect(testGlobals.__router.push).toHaveBeenCalledWith({ pathname: '/cell/edit/[id]', params: { id: expect.any(String), registered: '1' } }));
     const { params } = testGlobals.__router.push.mock.calls[0][0] as { params: { id: string } };
     expect(await getCell(params.id)).toMatchObject({ batteryBarcode: 'MANUAL-ENTRY-9', rawPayload: null });
   });

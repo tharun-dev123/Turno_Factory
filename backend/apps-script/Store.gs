@@ -123,6 +123,12 @@ function normalizeVisualStatus(value) {
   return VISUAL_STATUSES.indexOf(text) === -1 ? DEFAULT_VISUAL_STATUS : text;
 }
 
+/** An empty (or unrecognised) sheet value reads as "no manufacturer". */
+function normalizeManufacturer(value) {
+  var text = String(value === undefined || value === null ? '' : value).replace(/^\s+|\s+$/g, '');
+  return MANUFACTURERS.indexOf(text) === -1 ? null : text;
+}
+
 /** Builds the API representation of a cell from its BatteryCells row and CellMeta row. */
 function composeCell(cellValues, metaValues) {
   var m = metaValues || [];
@@ -144,6 +150,7 @@ function composeCell(cellValues, metaValues) {
     dcir90Mohm: toNumberOrNull(cellValues[COL.dcir90]),
     visualInspectionStatus: normalizeVisualStatus(cellValues[COL.visualStatus]),
     remarks: emptyToNull(cellValues[COL.remarks]) === null ? null : String(cellValues[COL.remarks]),
+    manufacturer: normalizeManufacturer(cellValues[COL.manufacturer]),
     stationId: m.length && m[META_COL.stationId] !== '' ? String(m[META_COL.stationId]) : null,
     lineId: m.length && m[META_COL.lineId] !== '' ? String(m[META_COL.lineId]) : null,
     scannedAt: m.length ? String(m[META_COL.scannedAt]) : '',
@@ -214,12 +221,12 @@ function writeRowVerified(sheet, rowNumber, values) {
   }
 }
 
-/** Writes a BatteryCells row (array of 13 values). Text columns are forced to plain text first. */
+/** Writes a BatteryCells row (array of 14 values). Text columns are forced to plain text first. */
 function writeCellsRow(store, rowNumber, values) {
   var sheet = store.cells;
   sheet.getRange(rowNumber, COL.serial + 1, 1, 2).setNumberFormat('@'); // A:B
   sheet.getRange(rowNumber, COL.localNumber + 1, 1, 1).setNumberFormat('@'); // F
-  sheet.getRange(rowNumber, COL.visualStatus + 1, 1, 3).setNumberFormat('@'); // K:M
+  sheet.getRange(rowNumber, COL.visualStatus + 1, 1, 4).setNumberFormat('@'); // K:N
   writeRowVerified(sheet, rowNumber, values);
 }
 
@@ -239,6 +246,7 @@ function buildCellValues(serial, barcode, fields) {
   row[COL.visualStatus] = f.visualInspectionStatus === undefined || f.visualInspectionStatus === null ? DEFAULT_VISUAL_STATUS : String(f.visualInspectionStatus);
   row[COL.remarks] = f.remarks === undefined || f.remarks === null ? '' : String(f.remarks);
   row[COL.createdAt] = f.createdAt === undefined || f.createdAt === null ? '' : String(f.createdAt);
+  row[COL.manufacturer] = f.manufacturer === undefined || f.manufacturer === null ? '' : String(f.manufacturer);
   for (var n = 0; n < NUMERIC_FIELDS.length; n++) {
     var v = f[NUMERIC_FIELDS[n].key];
     row[NUMERIC_FIELDS[n].col] = typeof v === 'number' && isFinite(v) ? v : '';
@@ -453,6 +461,7 @@ function initializeBackend() {
 
   setTextFormatForColumns(cells, CELL_TEXT_COLUMNS);
   applyVisualStatusDropdown(cells);
+  applyManufacturerDropdown(cells);
   setTextFormatForColumns(meta, [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]);
   setTextFormatForColumns(audit, [0, 1, 2, 3, 4, 5, 6]);
 
@@ -483,6 +492,13 @@ function applyVisualStatusDropdown(sheet) {
   var rows = Math.max(sheet.getMaxRows() - 1, 1);
   var rule = SpreadsheetApp.newDataValidation().requireValueInList(VISUAL_STATUSES, true).setAllowInvalid(false).build();
   sheet.getRange(2, COL.visualStatus + 1, rows, 1).setDataValidation(rule);
+}
+
+/** Restricts column N (Manufacturer) to the listed manufacturers, as a dropdown (empty is allowed). Safe to re-run. */
+function applyManufacturerDropdown(sheet) {
+  var rows = Math.max(sheet.getMaxRows() - 1, 1);
+  var rule = SpreadsheetApp.newDataValidation().requireValueInList(MANUFACTURERS, true).setAllowInvalid(false).build();
+  sheet.getRange(2, COL.manufacturer + 1, rows, 1).setDataValidation(rule);
 }
 
 /** Admin tool: run the same journal recovery and repair a write would perform. */

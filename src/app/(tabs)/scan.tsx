@@ -82,7 +82,7 @@ function ScannerScreen() {
     if (openedFor.current === result.cell.id) return;
     openedFor.current = result.cell.id;
     dismissResult();
-    router.push({ pathname: '/cell/edit/[id]', params: { id: result.cell.id } });
+    router.push({ pathname: '/cell/edit/[id]', params: { id: result.cell.id, registered: '1' } });
   }, [result, dismissResult, router]);
 
   // Only run the camera while this tab is visible; refresh today's count on each visit.

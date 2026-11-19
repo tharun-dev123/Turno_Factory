@@ -2,7 +2,7 @@ import { useFocusEffect } from 'expo-router';
 import { useCallback, useMemo, useRef, useState } from 'react';
 
 import type { CellRecord, CellStats } from '@/models/cell';
-import { filterCells, getCellsOverview } from '@/services/cellService';
+import { applyCellFilters, filterCells, getCellsOverview, type CellFilters } from '@/services/cellService';
 import { getErrorMessage } from '@/services/errors';
 
 type LoadState = 'loading' | 'ready' | 'error';
@@ -14,6 +14,8 @@ type LoadState = 'loading' | 'ready' | 'error';
  */
 export function useCells() {
   const [query, setQuery] = useState('');
+  const [manufacturer, setManufacturer] = useState<CellFilters['manufacturer']>(null);
+  const [status, setStatus] = useState<CellFilters['status']>(null);
   const [allCells, setAllCells] = useState<CellRecord[]>([]);
   const [stats, setStats] = useState<CellStats | null>(null);
   const [state, setState] = useState<LoadState>('loading');
@@ -52,10 +54,17 @@ export function useCells() {
     }, [load]),
   );
 
-  const cells = useMemo(() => filterCells(allCells, query), [allCells, query]);
+  // Search and both filters apply to the list already on the phone: changing any of them never causes a request.
+  const cells = useMemo(() => applyCellFilters(filterCells(allCells, query), { manufacturer, status }), [allCells, query, manufacturer, status]);
+  const filtersActive = manufacturer !== null || status !== null;
+  const clearAll = useCallback(() => {
+    setQuery('');
+    setManufacturer(null);
+    setStatus(null);
+  }, []);
 
   const refresh = useCallback(() => load('refresh'), [load]);
   const retry = useCallback(() => load('initial'), [load]);
 
-  return { query, setQuery, cells, stats, state, error, refreshing, refresh, retry };
+  return { query, setQuery, manufacturer, setManufacturer, status, setStatus, filtersActive, clearAll, cells, stats, state, error, refreshing, refresh, retry };
 }

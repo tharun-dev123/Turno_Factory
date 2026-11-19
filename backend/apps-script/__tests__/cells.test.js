@@ -26,7 +26,7 @@ describe('sheet layout', () => {
   it('creates the three tabs with the exact headers, in the exact column order', () => {
     const b = createBackend();
     const header = (sheet, n) => Array.from({ length: n }, (_, i) => sheet._get(1, i + 1));
-    expect(header(b.sheets.cells, 13)).toEqual([
+    expect(header(b.sheets.cells, 14)).toEqual([
       'Serial Number',
       'Battery Barcode',
       'Cell Weight',
@@ -40,6 +40,7 @@ describe('sheet layout', () => {
       'Cell Status',
       'Remarks',
       'Created At',
+      'Manufacturer',
     ]);
     expect(header(b.sheets.meta, 11)).toEqual([
       'Serial Number',
@@ -62,7 +63,7 @@ describe('sheet layout', () => {
     b.ctx.initializeBackend();
     b.ctx.initializeBackend();
     const cells = b.sheets.cells;
-    for (const col of [1, 2, 6, 11, 12, 13]) expect(cells.formats.get(`5,${col}`)).toBe('@'); // A, B, F (local number), K, L, M
+    for (const col of [1, 2, 6, 11, 12, 13, 14]) expect(cells.formats.get(`5,${col}`)).toBe('@'); // A, B, F (local number), K, L, M, N
     for (const col of [3, 4, 5, 7, 8, 9, 10]) expect(cells.formats.get(`5,${col}`)).toBeUndefined(); // measurements stay numeric
     expect(cells.protections).toHaveLength(1);
     expect(cells.frozenRows).toBe(1);
@@ -102,7 +103,7 @@ describe('cells.create', () => {
     });
 
     const [row] = b.sheets.cells.dump();
-    expect(row).toEqual(['1', 'ABC-123', '', '', '', '', '', '', '', '', 'Under Review', '', ISO]);
+    expect(row).toEqual(['1', 'ABC-123', '', '', '', '', '', '', '', '', 'Under Review', '', ISO, '']);
   });
 
   it('writes CellMeta (raw payload, mode, status, version) and an AuditLog CREATE row', () => {
@@ -341,7 +342,7 @@ describe('concurrency (LockService)', () => {
     b.login();
     let inner = null;
     b.sheets.cells.onOp = (op, range) => {
-      if (op === 'setValues' && range.numCols === 13 && !inner) {
+      if (op === 'setValues' && range.numCols === 14 && !inner) {
         inner = b.create('OVERLAP-2'); // arrives while the first request is mid-write
       }
     };
@@ -446,7 +447,7 @@ describe('idempotency (requestId)', () => {
 });
 
 describe('cells.update', () => {
-  it('maps every editable field to the correct column (A..J, K..L) and stores numbers as numbers', () => {
+  it('maps every editable field to the correct column (A..J, K..N) and stores numbers as numbers', () => {
     const b = createBackend();
     b.create('MAP-1');
     const res = update(b, '1', 1, {
@@ -463,7 +464,7 @@ describe('cells.update', () => {
 
     const [row] = b.sheets.cells.dump();
     // A Serial, B Barcode, C Weight, D Voltage, E ACIR, F Local number, G 0.5C, H/I/J DCIR, K Status, L Remarks
-    expect(row).toEqual(['1', 'MAP-1', 3120.4, 3.652, 0.42, '007', 50.2, 0.68, 0.65, 0.63, 'Under Review', '', ISO]);
+    expect(row).toEqual(['1', 'MAP-1', 3120.4, 3.652, 0.42, '007', 50.2, 0.68, 0.65, 0.63, 'Under Review', '', ISO, '']);
     expect(typeof row[2]).toBe('number');
     expect(typeof row[5]).toBe('string'); // identifier kept as text ('007', not 7)
 
@@ -501,7 +502,7 @@ describe('cells.update', () => {
     update(b, '1', 1, { cellWeightG: 9, remarks: '  A1  ', cellLocalNumber: 'L4' });
     const res = update(b, '1', 2, { cellWeightG: null, remarks: '   ', cellLocalNumber: null });
     expect(res.data.cell).toMatchObject({ cellWeightG: null, remarks: null, cellLocalNumber: null });
-    expect(b.sheets.cells.dump()[0]).toEqual(['1', 'UPD-2', '', '', '', '', '', '', '', '', 'Under Review', '', ISO]);
+    expect(b.sheets.cells.dump()[0]).toEqual(['1', 'UPD-2', '', '', '', '', '', '', '', '', 'Under Review', '', ISO, '']);
   });
 
   it('rejects invalid values and unknown fields without changing anything', () => {
@@ -523,7 +524,7 @@ describe('cells.update', () => {
       const res = update(b, '1', 1, patch);
       expect(res).toMatchObject({ ok: false, error: { code: 'VALIDATION', details: { fieldErrors: { [field]: expect.any(String) } } } });
     }
-    expect(b.sheets.cells.dump()[0]).toEqual(['1', 'UPD-3', '', '', '', '', '', '', '', '', 'Under Review', '', ISO]);
+    expect(b.sheets.cells.dump()[0]).toEqual(['1', 'UPD-3', '', '', '', '', '', '', '', '', 'Under Review', '', ISO, '']);
     expect(b.sheets.meta.dump()[0][10]).toBe(1);
   });
 

@@ -1,4 +1,5 @@
 import {
+  MANUFACTURERS,
   MAX_REMARKS_LENGTH,
   REMARKS_REQUIRED_STATUSES,
   VISUAL_INSPECTION_STATUSES,
@@ -37,6 +38,7 @@ export const FIELD_LABELS: Record<EditableFieldKey, string> = {
   dcir90Mohm: 'DCIR @90%',
   visualInspectionStatus: 'Visual inspection status',
   remarks: 'Remarks',
+  manufacturer: 'Manufacturer',
 };
 
 /** Parse a form string to a number. Empty string -> null. Invalid -> NaN. */
@@ -76,6 +78,11 @@ export function validateEditableFields(input: Partial<EditableCellFields>): Reco
   const status = input.visualInspectionStatus;
   if (status !== undefined && !VISUAL_INSPECTION_STATUSES.includes(status)) {
     errors.visualInspectionStatus = `${FIELD_LABELS.visualInspectionStatus} must be one of: ${VISUAL_INSPECTION_STATUSES.join(', ')}.`;
+  }
+
+  const manufacturer = input.manufacturer;
+  if (manufacturer !== undefined && manufacturer !== null && !MANUFACTURERS.includes(manufacturer)) {
+    errors.manufacturer = `${FIELD_LABELS.manufacturer} must be one of: ${MANUFACTURERS.join(', ')}.`;
   }
 
   const remarks = input.remarks;
